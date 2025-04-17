@@ -2,178 +2,173 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Grip, Plus, BarChart, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GripVertical, Plus, Settings, Activity } from "lucide-react";
-import { format } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
-type Exercise = {
+interface Exercise {
   id: string;
-  type: string;
-  duration: number;
-  date: string;
-};
+  name: string;
+  duration: number; // in minutes
+  completed: boolean;
+}
 
-type ExerciseWidgetProps = {
+interface ExerciseWidgetProps {
   id: string;
   title: string;
-};
+  color?: string;
+}
 
-const EXERCISE_TYPES = ["Running", "Cycling", "Swimming", "Weight Training", "Yoga", "Walking"];
-
-const ExerciseWidget = ({ id, title }: ExerciseWidgetProps) => {
+const ExerciseWidget = ({ id, title, color = "bg-card" }: ExerciseWidgetProps) => {
   const [exercises, setExercises] = useState<Exercise[]>([
-    { id: '1', type: 'Running', duration: 30, date: '2025-04-14' },
-    { id: '2', type: 'Cycling', duration: 45, date: '2025-04-15' },
-    { id: '3', type: 'Weight Training', duration: 60, date: '2025-04-16' },
-    { id: '4', type: 'Running', duration: 35, date: '2025-04-17' },
+    { id: "1", name: "Running", duration: 30, completed: true },
+    { id: "2", name: "Weightlifting", duration: 45, completed: false },
+    { id: "3", name: "Yoga", duration: 20, completed: false },
   ]);
-
-  const [newExercise, setNewExercise] = useState({
-    type: '',
-    duration: '',
-  });
-
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-
+  
+  const [exerciseName, setExerciseName] = useState("");
+  const [duration, setDuration] = useState("30");
+  
+  const completedExercises = exercises.filter((ex) => ex.completed).length;
+  const completionPercentage = exercises.length > 0 
+    ? Math.round((completedExercises / exercises.length) * 100) 
+    : 0;
+  
+  const totalMinutes = exercises.reduce((acc, exercise) => {
+    return exercise.completed ? acc + exercise.duration : acc;
+  }, 0);
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id });
+  
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
-
-  const addExercise = () => {
-    if (newExercise.type && newExercise.duration) {
-      const exercise = {
-        id: Date.now().toString(),
-        type: newExercise.type,
-        duration: parseInt(newExercise.duration),
-        date: format(new Date(), 'yyyy-MM-dd'),
-      };
-      
-      setExercises([...exercises, exercise]);
-      setNewExercise({ type: '', duration: '' });
-    }
+  
+  const addExercise = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!exerciseName.trim()) return;
+    
+    const exercise = {
+      id: Date.now().toString(),
+      name: exerciseName,
+      duration: parseInt(duration) || 30,
+      completed: false,
+    };
+    
+    setExercises([...exercises, exercise]);
+    setExerciseName("");
+    setDuration("30");
   };
-
-  // Prepare chart data - Last 7 days
-  const chartData = exercises
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-7)
-    .map(exercise => ({
-      date: format(new Date(exercise.date), 'MMM dd'),
-      minutes: exercise.duration
-    }));
-
-  // Calculate total minutes for the week
-  const totalMinutes = exercises.reduce((total, exercise) => total + exercise.duration, 0);
-  const averageMinutes = exercises.length > 0 ? Math.round(totalMinutes / exercises.length) : 0;
-
+  
+  const toggleExercise = (id: string) => {
+    setExercises(
+      exercises.map((ex) =>
+        ex.id === id ? { ...ex, completed: !ex.completed } : ex
+      )
+    );
+  };
+  
   return (
-    <Card ref={setNodeRef} style={style} className="shadow-md">
-      <CardHeader className="pb-2 flex flex-row justify-between items-center">
-        <div className="flex items-center">
-          <div {...attributes} {...listeners} className="cursor-grab mr-2">
-            <GripVertical size={16} className="text-muted-foreground" />
-          </div>
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </div>
-        <Button variant="ghost" size="icon" title="Widget Settings">
-          <Settings size={14} />
+    <Card ref={setNodeRef} style={style} className={cn("shadow-md", color)}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-lg font-medium">{title}</CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="cursor-grab"
+          {...attributes}
+          {...listeners}
+        >
+          <Grip size={16} />
+          <span className="sr-only">Move widget</span>
         </Button>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center">
-            <Activity className="mr-2 h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">Weekly Activity</span>
+      
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Progress</span>
+            <span>{completionPercentage}%</span>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Avg: {averageMinutes} min/day
-          </div>
+          <Progress value={completionPercentage} className="h-2" />
         </div>
         
-        <div className="h-40 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 10 }} 
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis 
-                tick={{ fontSize: 10 }} 
-                axisLine={false}
-                tickLine={false}
-                width={30}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  borderColor: 'hsl(var(--border))',
-                  fontSize: '12px',
-                  borderRadius: '6px'
-                }} 
-              />
-              <Bar dataKey="minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-          {exercises.slice(-5).reverse().map((exercise) => (
-            <div key={exercise.id} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                {format(new Date(exercise.date), 'MMM dd')}
-              </span>
-              <span>{exercise.type}</span>
-              <span className="font-medium">{exercise.duration} min</span>
+        <form onSubmit={addExercise} className="grid gap-2">
+          <Input
+            placeholder="Exercise name"
+            value={exerciseName}
+            onChange={(e) => setExerciseName(e.target.value)}
+            className="bg-background/50"
+          />
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              placeholder="Minutes"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              className="bg-background/50"
+              min="1"
+            />
+            <Button type="submit" className="shrink-0 bg-primary/90 hover:bg-primary">
+              <Plus size={16} />
+              <span className="sr-only">Add exercise</span>
+            </Button>
+          </div>
+        </form>
+        
+        <div className="space-y-1">
+          {exercises.map((exercise) => (
+            <div
+              key={exercise.id}
+              className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+            >
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={exercise.completed ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "h-6 w-6 p-0 rounded-full",
+                    exercise.completed ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  )}
+                  onClick={() => toggleExercise(exercise.id)}
+                >
+                  <Activity size={12} />
+                  <span className="sr-only">Toggle exercise</span>
+                </Button>
+                <span
+                  className={cn(
+                    "text-sm",
+                    exercise.completed && "text-muted-foreground"
+                  )}
+                >
+                  {exercise.name} ({exercise.duration} min)
+                </span>
+              </div>
             </div>
           ))}
         </div>
       </CardContent>
-      <CardFooter>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            addExercise();
-          }}
-          className="flex w-full gap-2"
-        >
-          <Select
-            value={newExercise.type}
-            onValueChange={(value) => setNewExercise({...newExercise, type: value})}
-          >
-            <SelectTrigger className="flex-grow text-sm">
-              <SelectValue placeholder="Exercise type" />
-            </SelectTrigger>
-            <SelectContent>
-              {EXERCISE_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="number"
-            min="1"
-            value={newExercise.duration}
-            onChange={(e) => setNewExercise({...newExercise, duration: e.target.value})}
-            placeholder="Minutes"
-            className="w-20 text-sm"
-          />
-          <Button 
-            type="submit" 
-            size="icon" 
-            disabled={!newExercise.type || !newExercise.duration}
-          >
-            <Plus size={16} />
-          </Button>
-        </form>
+      
+      <CardFooter className="bg-muted/20 border-t border-border/40">
+        <div className="w-full flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <BarChart size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Total Time</span>
+          </div>
+          <div className="font-medium">
+            {totalMinutes} minutes
+          </div>
+        </div>
       </CardFooter>
     </Card>
   );

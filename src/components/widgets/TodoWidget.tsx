@@ -1,133 +1,143 @@
+
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Check, Grip, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Check, Trash2, GripVertical, Plus, Settings } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
-type TodoItem = {
+interface Todo {
   id: string;
   text: string;
   completed: boolean;
-};
+}
 
-type TodoWidgetProps = {
+interface TodoWidgetProps {
   id: string;
   title: string;
-};
+  color?: string;
+}
 
-const TodoWidget = ({ id, title }: TodoWidgetProps) => {
-  const [todos, setTodos] = useState<TodoItem[]>([
-    { id: '1', text: 'Create dashboard layout', completed: true },
-    { id: '2', text: 'Implement dark mode', completed: false },
-    { id: '3', text: 'Add drag and drop functionality', completed: false },
+const TodoWidget = ({ id, title, color = "bg-card" }: TodoWidgetProps) => {
+  const [todos, setTodos] = useState<Todo[]>([
+    { id: "1", text: "Create a new widget", completed: true },
+    { id: "2", text: "Design the dashboard", completed: false },
+    { id: "3", text: "Add drag and drop", completed: false },
   ]);
-  const [newTodo, setNewTodo] = useState('');
-
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-
+  
+  const [newTodo, setNewTodo] = useState("");
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id });
+  
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  const addTodo = () => {
-    if (newTodo.trim()) {
-      setTodos([...todos, { id: Date.now().toString(), text: newTodo, completed: false }]);
-      setNewTodo('');
-    }
+  const addTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodo.trim()) return;
+    
+    const todo = {
+      id: Date.now().toString(),
+      text: newTodo,
+      completed: false,
+    };
+    
+    setTodos([...todos, todo]);
+    setNewTodo("");
   };
 
-  const toggleTodo = (todoId: string) => {
+  const toggleTodo = (id: string) => {
     setTodos(
       todos.map((todo) =>
-        todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
       )
     );
   };
 
-  const deleteTodo = (todoId: string) => {
-    setTodos(todos.filter((todo) => todo.id !== todoId));
+  const deleteTodo = (id: string) => {
+    setTodos(todos.filter((todo) => todo.id !== id));
   };
 
-  const completedCount = todos.filter(todo => todo.completed).length;
-  const completionPercentage = todos.length > 0 
-    ? Math.round((completedCount / todos.length) * 100) 
-    : 0;
-
   return (
-    <Card ref={setNodeRef} style={style} className="shadow-md">
-      <CardHeader className="pb-2 flex flex-row justify-between items-center">
-        <div className="flex items-center">
-          <div {...attributes} {...listeners} className="cursor-grab mr-2">
-            <GripVertical size={16} className="text-muted-foreground" />
-          </div>
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </div>
-        <Button variant="ghost" size="icon" title="Widget Settings">
-          <Settings size={14} />
+    <Card ref={setNodeRef} style={style} className={cn("shadow-md", color)}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-lg font-medium">{title}</CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="cursor-grab"
+          {...attributes}
+          {...listeners}
+        >
+          <Grip size={16} />
+          <span className="sr-only">Move widget</span>
         </Button>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="mb-4">
-          <Progress value={completionPercentage} className="h-2" />
-          <div className="text-xs text-muted-foreground mt-1 text-right">
-            {completedCount} of {todos.length} tasks completed
-          </div>
-        </div>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
+      
+      <CardContent>
+        <form onSubmit={addTodo} className="flex space-x-2 mb-4">
+          <Input
+            placeholder="Add a new task..."
+            value={newTodo}
+            onChange={(e) => setNewTodo(e.target.value)}
+            className="flex-1 bg-background/50"
+          />
+          <Button type="submit" size="sm" className="shrink-0 bg-primary/90 hover:bg-primary">
+            <Plus size={16} />
+          </Button>
+        </form>
+        
+        <div className="space-y-1">
           {todos.map((todo) => (
-            <div key={todo.id} className="flex items-center group">
+            <div
+              key={todo.id}
+              className="flex items-center justify-between py-2"
+            >
+              <div className="flex items-center gap-2 flex-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "h-5 w-5 rounded-full p-0 border-primary/50",
+                    todo.completed && "bg-primary text-primary-foreground border-primary"
+                  )}
+                  onClick={() => toggleTodo(todo.id)}
+                >
+                  {todo.completed && <Check size={12} />}
+                  <span className="sr-only">Toggle todo</span>
+                </Button>
+                <span
+                  className={cn(
+                    "flex-1",
+                    todo.completed && "line-through text-muted-foreground"
+                  )}
+                >
+                  {todo.text}
+                </span>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-7 w-7 rounded-full border ${
-                  todo.completed ? "bg-primary border-primary" : "border-input"
-                }`}
-                onClick={() => toggleTodo(todo.id)}
-              >
-                {todo.completed && <Check size={12} className="text-primary-foreground" />}
-              </Button>
-              <span
-                className={`ml-2 flex-grow ${
-                  todo.completed ? "line-through text-muted-foreground" : ""
-                }`}
-              >
-                {todo.text}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 onClick={() => deleteTodo(todo.id)}
               >
-                <Trash2 size={14} />
+                <X size={14} />
+                <span className="sr-only">Delete todo</span>
               </Button>
             </div>
           ))}
         </div>
       </CardContent>
-      <CardFooter>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            addTodo();
-          }}
-          className="flex w-full gap-2"
-        >
-          <Input
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-            placeholder="Add a task..."
-            className="text-sm"
-          />
-          <Button type="submit" size="icon" disabled={!newTodo.trim()}>
-            <Plus size={16} />
-          </Button>
-        </form>
-      </CardFooter>
     </Card>
   );
 };
