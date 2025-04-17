@@ -1,11 +1,11 @@
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sun, Moon, Plus } from "lucide-react";
+import { Sun, Moon, Plus, User } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { MainSidebar } from "@/components/Sidebar";
 import TodoWidget from "@/components/widgets/TodoWidget";
@@ -95,16 +95,30 @@ const Index = () => {
                 <h2 className="text-xl font-semibold">Dashboard</h2>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleTheme}
-                  className="bg-muted/30 border-border/50"
-                  title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-                >
-                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                </Button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={toggleTheme}
+                    className="bg-muted/30 border-border/50"
+                    title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+                  >
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                  </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    <Avatar>
+                      <AvatarImage src="/placeholder.svg" alt="User avatar" />
+                      <AvatarFallback>
+                        <User size={18} />
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
+                      John Doe
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </header>
