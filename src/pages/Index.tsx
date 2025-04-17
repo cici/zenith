@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Plus, User } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { MainSidebar } from "@/components/Sidebar";
 import TodoWidget from "@/components/widgets/TodoWidget";
 import ExerciseWidget from "@/components/widgets/ExerciseWidget";
@@ -79,7 +79,7 @@ const Index = () => {
       case 'exercise':
         return <ExerciseWidget key={widget.id} id={widget.id} title={widget.title} color={widget.color} />;
       default:
-        return <Card key={widget.id}>Unknown Widget Type</Card>;
+        return null;
     }
   };
 
@@ -144,9 +144,12 @@ const Index = () => {
                 items={widgets.map((w) => w.id)}
                 strategy={rectSortingStrategy}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <ResizablePanelGroup 
+                  direction="horizontal" 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                >
                   {widgets.map(renderWidget)}
-                </div>
+                </ResizablePanelGroup>
               </SortableContext>
             </DndContext>
           </main>
