@@ -28,7 +28,7 @@ const ResizableWidget = ({
       <Card className={cn("h-full shadow-md", color)}>
         {children}
       </Card>
-      <ResizableHandle className="hidden" />
+      <ResizableHandle withHandle className="h-2" />
     </ResizablePanel>
   );
 };
