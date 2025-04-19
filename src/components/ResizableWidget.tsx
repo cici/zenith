@@ -1,7 +1,7 @@
 
 import React, { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
-import { ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 
 interface ResizableWidgetProps {
@@ -20,16 +20,18 @@ const ResizableWidget = ({
   className 
 }: ResizableWidgetProps) => {
   return (
-    <ResizablePanel 
-      defaultSize={defaultSize}
-      minSize={minSize}
-      className={cn("transition-all duration-200 ease-in-out", className)}
-    >
-      <Card className={cn("h-full shadow-md", color)}>
-        {children}
-      </Card>
+    <ResizablePanelGroup direction="vertical" className={cn("min-h-[200px]", className)}>
+      <ResizablePanel 
+        defaultSize={defaultSize}
+        minSize={minSize}
+        className="transition-all duration-200 ease-in-out"
+      >
+        <Card className={cn("h-full shadow-md", color)}>
+          {children}
+        </Card>
+      </ResizablePanel>
       <ResizableHandle withHandle className="h-2" />
-    </ResizablePanel>
+    </ResizablePanelGroup>
   );
 };
 

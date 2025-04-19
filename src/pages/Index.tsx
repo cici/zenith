@@ -6,8 +6,6 @@ import { Sun, Moon, Plus, User } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ResizablePanelGroup } from "@/components/ui/resizable";
-import { MainSidebar } from "@/components/Sidebar";
 import TodoWidget from "@/components/widgets/TodoWidget";
 import ExerciseWidget from "@/components/widgets/ExerciseWidget";
 import AddWidgetDialog from "@/components/AddWidgetDialog";
