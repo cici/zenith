@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -6,6 +7,7 @@ import { Sun, Moon, Plus, User } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { MainSidebar } from "@/components/Sidebar";
 import TodoWidget from "@/components/widgets/TodoWidget";
 import ExerciseWidget from "@/components/widgets/ExerciseWidget";
 import AddWidgetDialog from "@/components/AddWidgetDialog";
