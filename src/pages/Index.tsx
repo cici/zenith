@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -123,7 +122,7 @@ const Index = () => {
             </div>
           </header>
 
-          <main className="container py-6 px-6">
+          <main className="container py-6 px-6 overflow-y-auto" style={{ height: "calc(100vh - 69px)" }}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">Your Dashboard</h2>
               
@@ -144,7 +143,7 @@ const Index = () => {
                 items={widgets.map((w) => w.id)}
                 strategy={rectSortingStrategy}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {widgets.map(renderWidget)}
                 </div>
               </SortableContext>

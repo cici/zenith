@@ -20,7 +20,10 @@ const ResizableWidget = ({
   className 
 }: ResizableWidgetProps) => {
   return (
-    <ResizablePanelGroup direction="vertical" className={cn("min-h-[200px]", className)}>
+    <ResizablePanelGroup 
+      direction="vertical" 
+      className={cn("min-h-[200px] max-h-[800px]", className)}
+    >
       <ResizablePanel 
         defaultSize={defaultSize}
         minSize={minSize}
@@ -30,7 +33,11 @@ const ResizableWidget = ({
           {children}
         </Card>
       </ResizablePanel>
-      <ResizableHandle withHandle className="h-2" />
+      <ResizableHandle 
+        withHandle 
+        className="h-2 bg-transparent hover:bg-primary/10" 
+      />
+      <ResizablePanel defaultSize={5} minSize={5} className="h-0" />
     </ResizablePanelGroup>
   );
 };
