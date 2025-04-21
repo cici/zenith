@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -143,7 +144,7 @@ const Index = () => {
                 items={widgets.map((w) => w.id)}
                 strategy={rectSortingStrategy}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {widgets.map(renderWidget)}
                 </div>
               </SortableContext>
