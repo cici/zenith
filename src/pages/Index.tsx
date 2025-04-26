@@ -92,7 +92,7 @@ const Index = () => {
             <div className="flex items-center justify-between px-8 max-w-[2000px] mx-auto w-full">
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
-                <h2 className="text-2xl font-semibold">Dashboard</h2>
+                <h2 className="text-2xl font-semibold text-gradient">Dashboard</h2>
               </div>
               
               <div className="flex items-center gap-6">
