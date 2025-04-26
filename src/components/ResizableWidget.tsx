@@ -22,23 +22,23 @@ const ResizableWidget = ({
   return (
     <ResizablePanelGroup 
       direction="vertical" 
-      className={cn("min-h-[300px] max-h-[1500px]", className)} // Increased max-height to 1500px
+      className={cn("min-h-[400px] max-h-[1500px]", className)}
     >
       <ResizablePanel 
         defaultSize={defaultSize}
         minSize={minSize}
-        maxSize={95} // Added explicit maxSize to allow larger expansion
+        maxSize={95}
         className="transition-all duration-200 ease-in-out"
       >
-        <Card className={cn("h-full shadow-md overflow-y-auto", color)}>
+        <Card className={cn("h-full shadow-lg overflow-y-auto", color)}>
           {children}
         </Card>
       </ResizablePanel>
       <ResizableHandle 
         withHandle 
-        className="h-4 bg-transparent hover:bg-primary/10" // Increased handle height for better usability
+        className="h-5 bg-transparent hover:bg-primary/10 cursor-ns-resize"
       />
-      <ResizablePanel defaultSize={20} minSize={5} maxSize={5} className="h-0" /> {/* Set small maxSize to ensure more space for content panel */}
+      <ResizablePanel defaultSize={20} minSize={5} maxSize={5} className="h-0" />
     </ResizablePanelGroup>
   );
 };
