@@ -85,11 +85,11 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen w-full overflow-hidden">
         <MainSidebar />
-        <SidebarInset className="bg-gradient-to-b from-background to-background/95">
+        <SidebarInset className="bg-gradient-to-b from-background to-background/95 w-full">
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-b-muted/20 py-4">
-            <div className="container flex items-center justify-between px-8">
+            <div className="flex items-center justify-between px-8 max-w-[2000px] mx-auto w-full">
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
                 <h2 className="text-2xl font-semibold">Dashboard</h2>
@@ -121,7 +121,7 @@ const Index = () => {
             </div>
           </header>
 
-          <main className="container py-8 px-8 overflow-y-auto" style={{ height: "calc(100vh - 73px)" }}>
+          <main className="py-8 px-8 overflow-y-auto max-w-[2000px] mx-auto w-full" style={{ height: "calc(100vh - 73px)" }}>
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
                 Your Dashboard
@@ -144,7 +144,7 @@ const Index = () => {
                 items={widgets.map((w) => w.id)}
                 strategy={rectSortingStrategy}
               >
-                <div className="grid grid-cols-2 gap-10">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
                   {widgets.map(renderWidget)}
                 </div>
               </SortableContext>

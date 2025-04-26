@@ -15,19 +15,19 @@ interface ResizableWidgetProps {
 const ResizableWidget = ({ 
   children, 
   minSize = 20, 
-  defaultSize = 50,
+  defaultSize = 70,
   color = "bg-card",
   className 
 }: ResizableWidgetProps) => {
   return (
     <ResizablePanelGroup 
       direction="vertical" 
-      className={cn("min-h-[400px] max-h-[1500px]", className)}
+      className={cn("min-h-[450px] max-h-[2000px]", className)}
     >
       <ResizablePanel 
         defaultSize={defaultSize}
         minSize={minSize}
-        maxSize={95}
+        maxSize={98}
         className="transition-all duration-200 ease-in-out"
       >
         <Card className={cn("h-full shadow-lg overflow-y-auto", color)}>
@@ -36,9 +36,9 @@ const ResizableWidget = ({
       </ResizablePanel>
       <ResizableHandle 
         withHandle 
-        className="h-5 bg-transparent hover:bg-primary/10 cursor-ns-resize"
+        className="h-6 bg-transparent hover:bg-primary/10 cursor-ns-resize"
       />
-      <ResizablePanel defaultSize={20} minSize={5} maxSize={5} className="h-0" />
+      <ResizablePanel defaultSize={5} minSize={2} maxSize={2} className="h-0" />
     </ResizablePanelGroup>
   );
 };
