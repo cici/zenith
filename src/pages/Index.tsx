@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -123,10 +122,6 @@ const Index = () => {
 
           <main className="py-8 px-8 overflow-y-auto max-w-[2000px] mx-auto w-full" style={{ height: "calc(100vh - 73px)" }}>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
-                Your Dashboard
-              </h2>
-              
               <Button 
                 onClick={() => setIsAddWidgetOpen(true)} 
                 className="gap-2 px-4 py-2 text-base bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
