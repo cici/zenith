@@ -85,53 +85,49 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen w-full overflow-hidden">
         <MainSidebar />
-        <SidebarInset className="bg-gradient-to-b from-background to-background/95">
-          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-b-muted/20 py-3">
-            <div className="container flex items-center justify-between px-6">
-              <div className="flex items-center gap-2">
+        <SidebarInset className="bg-gradient-to-b from-background to-background/95 w-full">
+          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-b-muted/20 py-4">
+            <div className="flex items-center justify-between px-8 max-w-[2000px] mx-auto w-full">
+              <div className="flex items-center gap-3">
                 <SidebarTrigger />
-                <h2 className="text-xl font-semibold">Dashboard</h2>
+                <h2 className="text-2xl font-semibold text-gradient">Dashboard</h2>
               </div>
               
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={toggleTheme}
-                    className="bg-muted/30 border-border/50"
-                    title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-                  >
-                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                  </Button>
-                  
-                  <div className="flex items-center gap-2">
-                    <Avatar>
-                      <AvatarImage src="/placeholder.svg" alt="User avatar" />
-                      <AvatarFallback>
-                        <User size={18} />
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
-                      John Doe
-                    </span>
-                  </div>
+              <div className="flex items-center gap-6">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className="bg-muted/30 border-border/50"
+                  title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+                >
+                  {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                </Button>
+                
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src="/placeholder.svg" alt="User avatar" />
+                    <AvatarFallback>
+                      <User size={20} />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-base font-medium bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
+                    John Doe
+                  </span>
                 </div>
               </div>
             </div>
           </header>
 
-          <main className="container py-6 px-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">Your Dashboard</h2>
-              
+          <main className="py-8 px-8 overflow-y-auto max-w-[2000px] mx-auto w-full" style={{ height: "calc(100vh - 73px)" }}>
+            <div className="flex justify-between items-center mb-8">
               <Button 
                 onClick={() => setIsAddWidgetOpen(true)} 
-                className="gap-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                className="gap-2 px-4 py-2 text-base bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
               >
-                <Plus size={16} />
+                <Plus size={18} />
                 Add Widget
               </Button>
             </div>
@@ -144,7 +140,7 @@ const Index = () => {
                 items={widgets.map((w) => w.id)}
                 strategy={rectSortingStrategy}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
                   {widgets.map(renderWidget)}
                 </div>
               </SortableContext>
