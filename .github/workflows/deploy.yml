@@ -31,7 +31,6 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            .next
             dist
             build
           key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
