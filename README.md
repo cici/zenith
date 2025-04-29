@@ -1,4 +1,7 @@
-# Welcome to your Lovable project
+# Project Zenith
+
+[![CI](https://github.com/cici/zenith/actions/workflows/ci.yml/badge.svg)](https://github.com/cici/zenith/actions/workflows/ci.yml)
+[![Deploy](https://github.com/cici/zenith/actions/workflows/deploy.yml/badge.svg)](https://github.com/cici/zenith/actions/workflows/deploy.yml)
 
 ## Project info
 
@@ -60,9 +63,41 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/10e8aa49-2bef-4a95-a489-9849186aceb0) and click on Share -> Publish.
+This project is deployed on [Railway](https://railway.app), a modern cloud platform that makes deploying applications simple and scalable.
+
+### Manual Deployment
+
+1. Install the Railway CLI:
+```bash
+npm install -g @railway/cli
+```
+
+2. Login to Railway:
+```bash
+railway login
+```
+
+3. Link your project:
+```bash
+railway link
+```
+
+4. Deploy your application:
+```bash
+railway up
+```
+
+### Automatic Deployment
+
+The project is configured with GitHub Actions for continuous deployment. Every push to the `main` branch triggers an automatic deployment to Railway.
+
+Required GitHub Secrets:
+- `RAILWAY_TOKEN`: Your Railway API token
+- `RAILWAY_SERVICE_ID`: Your Railway service ID
+
+You can find these values in your Railway dashboard under Project Settings.
 
 ## Can I connect a custom domain to my Lovable project?
 
