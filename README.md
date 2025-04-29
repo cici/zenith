@@ -2,6 +2,12 @@
 
 [![CI](https://github.com/cici/zenith/actions/workflows/ci.yml/badge.svg)](https://github.com/cici/zenith/actions/workflows/ci.yml)
 [![Deploy](https://github.com/cici/zenith/actions/workflows/deploy.yml/badge.svg)](https://github.com/cici/zenith/actions/workflows/deploy.yml)
+[![License](https://img.shields.io/github/license/cici/zenith)](https://github.com/cici/zenith/blob/main/LICENSE)
+[![Node.js Version](https://img.shields.io/node/v/vite)](https://nodejs.org)
+[![Dependencies Status](https://img.shields.io/librariesio/github/cici/zenith)](https://libraries.io/github/cici/zenith)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue)](https://www.typescriptlang.org/)
+[![Last Commit](https://img.shields.io/github/last-commit/cici/zenith)](https://github.com/cici/zenith/commits/main)
 
 ## Project info
 
