@@ -2,6 +2,10 @@ name: Deploy
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+  VITE_APP_NAME: ${{ secrets.VITE_APP_NAME }}
+  VITE_APP_VERSION: ${{ secrets.VITE_APP_VERSION }}
 
 on:
   push:
@@ -38,6 +42,11 @@ jobs:
             ${{ runner.os }}-build-
 
       - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_NAME: ${{ secrets.VITE_APP_NAME }}
+          VITE_APP_VERSION: ${{ secrets.VITE_APP_VERSION }}
         run: npm run build
 
       - name: Deploy to Railway
@@ -45,4 +54,9 @@ jobs:
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           service: ${{ secrets.RAILWAY_SERVICE_ID }}
-          detach: true # Detach from the GitHub Action process to prevent timeouts 
+          detach: true # Detach from the GitHub Action process to prevent timeouts
+          variables: |
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
+            VITE_APP_NAME=${{ secrets.VITE_APP_NAME }}
+            VITE_APP_VERSION=${{ secrets.VITE_APP_VERSION }} 
