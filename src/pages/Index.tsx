@@ -6,8 +6,9 @@ import TodoWidget from "@/components/widgets/TodoWidget";
 import ExerciseWidget from "@/components/widgets/ExerciseWidget";
 import AddWidgetDialog from "@/components/AddWidgetDialog";
 import MainLayout from "@/layouts/MainLayout";
+import Dashboard from '@/components/Dashboard';
 
-const Index = () => {
+const Index: React.FC = () => {
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const [widgets, setWidgets] = useState([
     {
@@ -77,6 +78,7 @@ const Index = () => {
 
   return (
     <MainLayout>
+      <Dashboard />
       <div className="flex justify-between items-center mb-6">
         <Button 
           onClick={() => setIsAddWidgetOpen(true)} 
