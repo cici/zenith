@@ -1,3 +1,5 @@
+import { zxcvbn, ZxcvbnResult } from '@zxcvbn-ts/core';
+
 /**
  * Password validation rules:
  * - Minimum 12 characters
@@ -41,42 +43,74 @@ export const validatePassword = (password: string): { isValid: boolean; errors: 
 };
 
 /**
- * Calculate password strength score (0-100)
+ * Calculate password strength using zxcvbn
  */
-export const getPasswordStrength = (password: string): number => {
-  let score = 0;
-
-  // Length contribution (up to 25 points)
-  score += Math.min(25, Math.floor(password.length * 2));
-
-  // Character variety contribution (up to 75 points)
-  if (/[A-Z]/.test(password)) score += 15; // uppercase
-  if (/[a-z]/.test(password)) score += 15; // lowercase
-  if (/\d/.test(password)) score += 15; // numbers
-  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score += 15; // special chars
-  if (/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{12,}$/.test(password)) score += 15; // all criteria met
-
-  return Math.min(100, score);
+export const getPasswordStrength = (password: string): ZxcvbnResult => {
+  if (!password) {
+    return {
+      password: '',
+      score: 0,
+      feedback: {
+        warning: '',
+        suggestions: ['Enter a password'],
+      },
+      crackTimesSeconds: {
+        onlineThrottling100PerHour: 0,
+        onlineNoThrottling10PerSecond: 0,
+        offlineSlowHashing1e4PerSecond: 0,
+        offlineFastHashing1e10PerSecond: 0,
+      },
+      crackTimesDisplay: {
+        onlineThrottling100PerHour: 'less than a second',
+        onlineNoThrottling10PerSecond: 'less than a second',
+        offlineSlowHashing1e4PerSecond: 'less than a second',
+        offlineFastHashing1e10PerSecond: 'less than a second',
+      },
+      guesses: 0,
+      guessesLog10: 0,
+      sequence: [],
+      calcTime: 0,
+    };
+  }
+  return zxcvbn(password);
 };
 
 /**
- * Get password strength label based on score
+ * Get password strength label based on zxcvbn score
  */
 export const getPasswordStrengthLabel = (score: number): string => {
-  if (score >= 80) return 'Very Strong';
-  if (score >= 60) return 'Strong';
-  if (score >= 40) return 'Medium';
-  if (score >= 20) return 'Weak';
-  return 'Very Weak';
+  switch (score) {
+    case 0:
+      return 'Very Weak';
+    case 1:
+      return 'Weak';
+    case 2:
+      return 'Fair';
+    case 3:
+      return 'Strong';
+    case 4:
+      return 'Very Strong';
+    default:
+      return 'Very Weak';
+  }
 };
 
 /**
- * Get color for password strength indicator
+ * Get color for password strength indicator based on zxcvbn score
  */
 export const getPasswordStrengthColor = (score: number): string => {
-  if (score >= 80) return '#22c55e'; // green-500
-  if (score >= 60) return '#84cc16'; // lime-500
-  if (score >= 40) return '#eab308'; // yellow-500
-  if (score >= 20) return '#f97316'; // orange-500
-  return '#ef4444'; // red-500
+  switch (score) {
+    case 0:
+      return '#ef4444'; // red-500
+    case 1:
+      return '#f97316'; // orange-500
+    case 2:
+      return '#eab308'; // yellow-500
+    case 3:
+      return '#84cc16'; // lime-500
+    case 4:
+      return '#22c55e'; // green-500
+    default:
+      return '#ef4444'; // red-500
+  }
 }; 

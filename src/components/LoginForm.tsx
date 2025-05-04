@@ -20,12 +20,18 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccess(false);
-    if (mode === 'login') {
-      const { error } = await signIn(email, password);
-      if (!error) setSuccess(true);
-    } else {
-      const { error } = await signUp(email, password);
-      if (!error) setSuccess(true);
+
+    try {
+      if (mode === 'login') {
+        await signIn(email, password);
+        setSuccess(true);
+      } else {
+        await signUp(email, password);
+        setSuccess(true);
+      }
+    } catch (err) {
+      console.error(`Error during ${mode}:`, err);
+      setSuccess(false);
     }
   };
 

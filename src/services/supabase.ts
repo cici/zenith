@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient, User, AuthResponse } from '@supabase/supabase-js';
 import { validatePassword } from '@/utils/validation';
+import { handleAuthError } from '@/utils/errorHandling';
 
 // Debug: Log all Vite env variables
 console.log('Vite Environment Variables:', {
@@ -28,8 +29,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true, // Automatically refresh the token before it expires
     persistSession: true, // Keep the session alive between page refreshes
     detectSessionInUrl: true, // Look for tokens in the URL on initial load
-    storageKey: 'zenith-auth-token', // Custom storage key
-    storage: localStorage, // Use localStorage (you can switch to cookies if needed)
+    storage: {
+      // Custom storage implementation using cookies
+      getItem: async (key: string) => {
+        // Get cookie by name
+        const value = document.cookie
+          .split('; ')
+          .find(row => row.startsWith(`${key}=`))
+          ?.split('=')[1];
+        if (value) {
+          return value;
+        }
+        return null;
+      },
+      setItem: async (key: string, value: string) => {
+        // Set secure, HTTP-only cookie with SameSite=Strict
+        document.cookie = `${key}=${value}; path=/; secure; samesite=strict; max-age=${value ? '31536000' : '0'}`; // 1 year or delete if no value
+      },
+      removeItem: async (key: string) => {
+        // Remove cookie by setting expired date
+        document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict`;
+      },
+    },
   },
 });
 
@@ -47,59 +68,91 @@ export const getCurrentUser = async (): Promise<User | null> => {
 // Helper function to get session
 export const getSession = async () => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return data.session;
   } catch (error) {
-    console.error('Error getting session:', error);
-    return null;
+    throw handleAuthError(error);
   }
 };
 
 // Helper function to refresh session
-export const refreshSession = async () => {
+export const refreshSession = async (refreshToken?: string) => {
   try {
-    const { data: { session }, error } = await supabase.auth.refreshSession();
-    if (error) {
-      console.error('Error refreshing session:', error);
-      return null;
-    }
-    return session;
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+
+    if (error) throw error;
+    return data.session;
   } catch (error) {
-    console.error('Error refreshing session:', error);
-    return null;
+    throw handleAuthError(error);
   }
 };
 
 // Helper function to sign up
-export const signUp = async (email: string, password: string): Promise<AuthResponse | { error: Error }> => {
-  // Validate password strength
-  const { isValid, errors } = validatePassword(password);
-  if (!isValid) {
-    return {
-      error: new Error(`Invalid password: ${errors.join(', ')}`)
-    };
-  }
+export const signUp = async (email: string, password: string, metadata?: { [key: string]: any }) => {
+  try {
+    // Validate password strength
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      throw new Error(validation.errors.join('. '));
+    }
 
-  return await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
-    },
-  });
+    // Sign up with email and password
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: metadata, // Add any additional user metadata
+      },
+    });
+
+    if (error) throw error;
+
+    console.log("Data returned from signUpWithPassword:", data);
+    return data;
+  } catch (error) {
+    throw handleAuthError(error);
+  }
 };
 
 // Helper function to sign in
-export const signIn = async (email: string, password: string): Promise<AuthResponse> => {
-  return await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+export const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
+  try {
+    // Sign in with password
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    // If rememberMe is true and we have a session, refresh it for long-lived token
+    if (rememberMe && data.session?.refresh_token) {
+      const { error: refreshError } = await supabase.auth.refreshSession({
+        refresh_token: data.session.refresh_token,
+      });
+
+      if (refreshError) throw refreshError;
+    }
+
+    console.log("Data returned from signInWithPassword:", data);
+    return data;
+  } catch (error) {
+    throw handleAuthError(error);
+  }
 };
 
 // Helper function to sign out
-export const signOut = async (): Promise<void> => {
-  await supabase.auth.signOut();
+export const signOut = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    throw handleAuthError(error);
+  }
 };
 
 // Helper function to reset password

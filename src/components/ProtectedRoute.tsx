@@ -11,14 +11,17 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Show nothing while checking authentication status
   if (loading) {
-    return null;
+    return null; // Or a loading spinner
   }
 
+  // Temporarily disabled authentication check for development (Task #11)
+  /*
   // Redirect to login if not authenticated
   if (!user) {
     return <Navigate to="/" replace />;
   }
+  */
 
-  // Render children if authenticated
+  // Render children if authenticated (or if check is disabled)
   return <>{children}</>;
 } 
