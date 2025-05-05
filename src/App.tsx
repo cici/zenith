@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,8 +10,26 @@ import Index from "./pages/Index";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { isSupabaseConfigured } from "@/services/supabase";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 const queryClient = new QueryClient();
+
+const ConfigWarning = () => {
+  if (isSupabaseConfigured()) return null;
+  
+  return (
+    <Alert variant="destructive" className="mb-4 mx-4 mt-4">
+      <ExclamationTriangleIcon className="h-4 w-4" />
+      <AlertTitle>Supabase Configuration Missing</AlertTitle>
+      <AlertDescription>
+        Supabase URL and/or Anon Key are not set. Please create a .env file with VITE_SUPABASE_URL and 
+        VITE_SUPABASE_ANON_KEY variables, or connect to Supabase via the Supabase integration button.
+      </AlertDescription>
+    </Alert>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -20,6 +39,7 @@ const App = () => (
         <Sonner />
         <AuthProvider>
           <BrowserRouter>
+            <ConfigWarning />
             <Routes>
               {/* Temporarily redirect root to /index to bypass login (Task #11) */}
               <Route path="/" element={<Navigate to="/index" replace />} />
