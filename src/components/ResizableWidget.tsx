@@ -1,4 +1,3 @@
-
 import React, { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -38,7 +37,7 @@ const ResizableWidget = ({
         withHandle 
         className="h-6 bg-transparent hover:bg-primary/10 cursor-ns-resize"
       />
-      <ResizablePanel defaultSize={5} minSize={2} maxSize={2} className="h-0" />
+      <ResizablePanel defaultSize={100 - defaultSize} minSize={2} maxSize={100 - minSize} className="h-0" />
     </ResizablePanelGroup>
   );
 };

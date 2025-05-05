@@ -11,8 +11,10 @@ import {
   loadLayoutFromLocalStorage,
 } from '@/utils/dashboardUtils';
 import { Button } from '@/components/ui/button';
-import { Undo, Redo, Loader2, RotateCcw } from 'lucide-react';
+import { Undo, Redo, Loader2, RotateCcw, Settings } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast"; // Import useToast
+import { DashboardSettingsPanel } from '@/components/DashboardSettingsPanel'; // Import the panel
+import TodoWidget from '@/components/widgets/TodoWidget'; // Import TodoWidget
 
 // --- Simple Debounce Utility ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,13 +76,101 @@ const cols = { lg: 12, md: 9, sm: 6, xs: 4, xxs: 2 };
 
 const SAVE_DELAY = 1500; // ms delay before saving layout
 
+// Define an interface for widget definitions
+interface WidgetDefinition {
+  id: string;
+  title: string;
+  component: React.ReactNode;
+  isLoading?: boolean;
+  error?: string | undefined;
+}
+
 const Dashboard: React.FC = () => {
   const [layouts, setLayouts] = useState<GridLayouts>(initialLayouts); // Use renamed type
   const [history, setHistory] = useState<GridLayouts[]>([initialLayouts]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false); // Add saving state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for settings panel
   const { toast } = useToast(); // Initialize toast
+
+  // --- Placeholder Settings State & Handlers ---
+  // TODO: Replace these with actual state management and logic
+  const [user, setUser] = useState({ id: 'user123', displayName: 'Demo User', email: 'demo@example.com', timezone: 'America/New_York' }); // Example user
+  const [currentWidgets, setCurrentWidgets] = useState([
+    { id: 'a', name: 'Widget A', visible: true },
+    { id: 'b', name: 'Widget B (Loading)', visible: true },
+    { id: 'c', name: 'Widget C (Error)', visible: true },
+    { id: 'd', name: 'Widget D', visible: false },
+  ]);
+  const [layoutPreset, setLayoutPreset] = useState('default');
+  const [theme, setTheme] = useState('system');
+  const [gridSettings, setGridSettings] = useState({ cols: 12, rowHeight: 80 });
+
+  const handleWidgetVisibilityChange = (widgetId: string, isVisible: boolean, isPreview?: boolean) => {
+    console.log(`Widget ${widgetId} visibility changed to ${isVisible}. Preview: ${isPreview}`);
+    // TODO: Implement actual logic (update temporary or permanent state)
+    setCurrentWidgets(prev => prev.map(w => w.id === widgetId ? { ...w, visible: isVisible } : w));
+  };
+  const handleLayoutPresetChange = (preset: string, isPreview?: boolean) => {
+    console.log(`Layout preset changed to ${preset}. Preview: ${isPreview}`);
+    // TODO: Implement actual logic (update temporary or permanent state)
+    if (!isPreview) setLayoutPreset(preset);
+    // If isPreview, maybe update a temporary state or directly apply to grid layout temporarily
+  };
+  const handleThemeChange = (newTheme: string, isPreview?: boolean) => {
+    console.log(`Theme changed to ${newTheme}. Preview: ${isPreview}`);
+    // TODO: Implement actual logic (update temporary or permanent state)
+    if (!isPreview) setTheme(newTheme);
+    // If isPreview, maybe update a temporary state or apply theme class temporarily
+  };
+  const handleGridSettingsChange = (settings: { cols: number; rowHeight: number }, isPreview?: boolean) => {
+    console.log(`Grid settings changed:`, settings, `Preview: ${isPreview}`);
+    // TODO: Implement actual logic (update temporary or permanent state)
+    if (!isPreview) setGridSettings(settings);
+    // If isPreview, maybe update temporary state or apply grid settings temporarily
+  };
+  // --- End Placeholder Settings State & Handlers ---
+
+  // Create a state to track which widget is in each position
+  const [widgetPositions, setWidgetPositions] = useState<{[key: string]: string}>({
+    'a': 'todo',
+    'b': 'loading',
+    'c': 'error',
+    'd': 'empty'
+  });
+  
+  // Define the available widget types
+  const widgetDefinitions: {[key: string]: WidgetDefinition} = {
+    'todo': { 
+      id: 'todo', 
+      title: 'To-Do List', 
+      component: <TodoWidget id="a" />,
+      isLoading: false, 
+      error: undefined 
+    },
+    'loading': { 
+      id: 'loading', 
+      title: 'Widget B (Loading)', 
+      component: <div>Content for Widget B</div>,
+      isLoading: true, 
+      error: undefined 
+    },
+    'error': { 
+      id: 'error', 
+      title: 'Widget C (Error)', 
+      component: <div>Content for Widget C</div>,
+      isLoading: false, 
+      error: 'Failed to load data.' 
+    },
+    'empty': { 
+      id: 'empty', 
+      title: 'Widget D', 
+      component: <div>Content for Widget D</div>,
+      isLoading: false, 
+      error: undefined 
+    },
+  };
 
   // Load initial layout from DB or Local Storage on mount
   useEffect(() => {
@@ -174,6 +264,9 @@ const Dashboard: React.FC = () => {
     } else {
         console.log('Layout change originated from undo/redo, skipping history update.');
     }
+
+    // Here you would also handle widget type changes from drag and drop
+    // This would require additional logic to track which widget was dropped where
   };
 
   const undo = useCallback(() => {
@@ -211,12 +304,19 @@ const Dashboard: React.FC = () => {
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  const widgets = [
-    { id: 'a', title: 'Widget A', content: 'Content for Widget A', isLoading: false, error: undefined },
-    { id: 'b', title: 'Widget B (Loading)', content: 'Content for Widget B', isLoading: true, error: undefined },
-    { id: 'c', title: 'Widget C (Error)', content: 'Content for Widget C', isLoading: false, error: 'Failed to load data.' },
-    { id: 'd', title: 'Widget D', content: 'Content for Widget D', isLoading: false, error: undefined },
-  ];
+  // Create the list of widgets to render based on current positions
+  const widgetsToRender = Object.keys(widgetPositions).map(position => {
+    const widgetType = widgetPositions[position];
+    const widget = widgetDefinitions[widgetType];
+    
+    return {
+      id: position,
+      title: widget.title,
+      component: widget.component,
+      isLoading: widget.isLoading,
+      error: widget.error
+    };
+  });
 
   return (
     <div className="flex flex-col min-h-screen p-4">
@@ -237,6 +337,16 @@ const Dashboard: React.FC = () => {
           <Button variant="outline" size="icon" onClick={handleResetLayout} disabled={isSaving} aria-label="Reset layout to default">
              <RotateCcw className="h-4 w-4" />
           </Button>
+          {/* Settings Button */}
+          <Button 
+             variant="outline" 
+             size="icon" 
+             onClick={() => setIsSettingsOpen(true)} 
+             disabled={isSaving} // Optionally disable while saving
+             aria-label="Open dashboard settings"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       {isLoaded ? (
@@ -253,23 +363,38 @@ const Dashboard: React.FC = () => {
           isDraggable={true}
           isResizable={true}
         >
-          {widgets.map((widget) => (
+          {widgetsToRender.map((widget) => (
             <div key={widget.id} className="overflow-hidden">
               <WidgetContainer
                 title={widget.title}
                 isLoading={widget.isLoading}
                 error={widget.error}
               >
-                {widget.content}
+                {widget.component}
               </WidgetContainer>
             </div>
           ))}
         </ResponsiveGridLayout>
       ) : (
-        <div className="flex items-center justify-center flex-grow">
-            <p>Loading Dashboard Layout...</p>
+        <div className="flex justify-center items-center min-h-[300px]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
+      
+      {/* Render Settings Panel Conditionally */}
+      <DashboardSettingsPanel
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        user={user} // Pass placeholder user
+        widgets={currentWidgets} // Pass placeholder widgets
+        onWidgetVisibilityChange={handleWidgetVisibilityChange} // Pass handler
+        currentLayoutPreset={layoutPreset} // Pass placeholder preset
+        onLayoutPresetChange={handleLayoutPresetChange} // Pass handler
+        currentTheme={theme} // Pass placeholder theme
+        onThemeChange={handleThemeChange} // Pass handler
+        currentGridSettings={gridSettings} // Pass placeholder grid settings
+        onGridSettingsChange={handleGridSettingsChange} // Pass handler
+      />
     </div>
   );
 };

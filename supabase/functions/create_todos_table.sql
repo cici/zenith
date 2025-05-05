@@ -12,11 +12,13 @@ BEGIN
     due_date date,
     priority int,
     completed boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    tags text[] DEFAULT '{}'::text[]
   );
   CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id);
   CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(completed);
   COMMENT ON TABLE todos IS 'To-Do items for each user.';
   COMMENT ON COLUMN todos.priority IS '1=high, 2=medium, 3=low.';
+  COMMENT ON COLUMN todos.tags IS 'Array of tags or categories for the todo item.';
 END;
 $$; 
