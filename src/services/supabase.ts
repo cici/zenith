@@ -1,3 +1,4 @@
+
 import { createClient, SupabaseClient, User, AuthResponse } from '@supabase/supabase-js';
 import { validatePassword } from '@/utils/validation';
 import { handleAuthError } from '@/utils/errorHandling';
@@ -10,16 +11,27 @@ console.log('Vite Environment Variables:', {
   DEV: import.meta.env.DEV,
 });
 
-// Vite environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Default fallback values for development (DO NOT USE THESE IN PRODUCTION)
+const DEFAULT_SUPABASE_URL = 'https://placeholder.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSJ9.J2eiPLx-3X7Z0YSvYfXMEm_H25yu4QLbV9pQRLfZzHw';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase Configuration Error:', {
-    url: supabaseUrl ? 'defined' : 'undefined',
-    key: supabaseAnonKey ? 'defined' : 'undefined'
-  });
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+// Vite environment variables with fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+
+// Log configuration for debugging
+console.log('Supabase Configuration:', {
+  url: supabaseUrl,
+  keyDefined: supabaseAnonKey ? 'Yes (length: ' + supabaseAnonKey.length + ')' : 'No'
+});
+
+// Create a dummy client for development if real credentials aren't available
+const isUsingDummyClient = supabaseUrl === DEFAULT_SUPABASE_URL;
+if (isUsingDummyClient) {
+  console.warn(
+    'WARNING: Using placeholder Supabase credentials. The app will not connect to a real database. ' +
+    'Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.'
+  );
 }
 
 // Create Supabase client with custom settings
@@ -54,8 +66,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Added a function to check if we're using a real Supabase connection
+export const isSupabaseConfigured = (): boolean => {
+  return !isUsingDummyClient;
+};
+
 // Helper function to get current user
 export const getCurrentUser = async (): Promise<User | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. getCurrentUser will return null.');
+    return null;
+  }
+  
   try {
     const { data: { user } } = await supabase.auth.getUser();
     return user;
@@ -67,6 +89,11 @@ export const getCurrentUser = async (): Promise<User | null> => {
 
 // Helper function to get session
 export const getSession = async () => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. getSession will return null.');
+    return null;
+  }
+  
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
@@ -78,6 +105,11 @@ export const getSession = async () => {
 
 // Helper function to refresh session
 export const refreshSession = async (refreshToken?: string) => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. refreshSession will return null.');
+    return null;
+  }
+  
   try {
     const { data, error } = await supabase.auth.refreshSession({
       refresh_token: refreshToken,
@@ -92,6 +124,11 @@ export const refreshSession = async (refreshToken?: string) => {
 
 // Helper function to sign up
 export const signUp = async (email: string, password: string, metadata?: { [key: string]: any }) => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. signUp will simulate success but not actually create an account.');
+    return { user: null, session: null };
+  }
+  
   try {
     // Validate password strength
     const validation = validatePassword(password);
@@ -120,6 +157,11 @@ export const signUp = async (email: string, password: string, metadata?: { [key:
 
 // Helper function to sign in
 export const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. signIn will simulate success but not actually authenticate.');
+    return { user: null, session: null };
+  }
+  
   try {
     // Sign in with password
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -147,6 +189,11 @@ export const signIn = async (email: string, password: string, rememberMe: boolea
 
 // Helper function to sign out
 export const signOut = async () => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. signOut will not actually sign out a user.');
+    return;
+  }
+  
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -157,6 +204,11 @@ export const signOut = async () => {
 
 // Helper function to reset password
 export const resetPassword = async (email: string): Promise<{ error: Error | null }> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. resetPassword will not actually send a reset email.');
+    return { error: null };
+  }
+  
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/auth/reset-password`,
   });
@@ -165,8 +217,13 @@ export const resetPassword = async (email: string): Promise<{ error: Error | nul
 
 // Helper function to update password
 export const updatePassword = async (newPassword: string): Promise<{ error: Error | null }> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase is not properly configured. updatePassword will not actually update a password.');
+    return { error: null };
+  }
+  
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
   });
   return { error };
-}; 
+};
