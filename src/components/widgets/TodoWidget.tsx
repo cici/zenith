@@ -20,7 +20,7 @@ import {
   Check, Grip, Plus, X, AlertCircle, Loader2, 
   CalendarIcon, TagIcon, Edit, ChevronDown,
   SlidersHorizontal, FilterX, Search, ArrowUpDown,
-  ArrowUp, ArrowDown, MoveVertical
+  ArrowUp, ArrowDown, MoveVertical, PieChart, BarChart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -78,6 +78,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import StatisticsDashboard from "./StatisticsDashboard";
 
 // Priority utilities
 function getPriorityLabel(priority: number): string {
@@ -409,6 +410,9 @@ const TodoWidget = ({ id, title, color = "bg-[#32224A]", userId = "demo-user" }:
   
   // Add a confirmation state for clearing all filters
   const [showClearFiltersConfirm, setShowClearFiltersConfirm] = useState(false);
+  
+  // Add a new state variable for view mode
+  const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
   
   // Update available tags when todos change
   useEffect(() => {
@@ -768,512 +772,479 @@ const TodoWidget = ({ id, title, color = "bg-[#32224A]", userId = "demo-user" }:
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <ResizableWidget color={color} minSize={15} defaultSize={35}>
-        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <div className="flex-1"></div>
-          <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-8 w-8 relative",
-                    activeFilterCount > 0 && "text-[#4D45D6] bg-[#4D45D6]/10"
-                  )}
+    <ResizableWidget
+      id={id}
+      title={title || "To-Do List"}
+      color={color}
+      className="h-auto"
+    >
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-md font-medium">
+          {viewMode === 'list' ? "To-Do List" : "Task Statistics"}
+        </CardTitle>
+        <div className="flex items-center space-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <span className="sr-only">View mode</span>
+                {viewMode === 'list' ? <PieChart className="h-4 w-4" /> : <BarChart className="h-4 w-4" />}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[160px]">
+              <DropdownMenuLabel>View Mode</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setViewMode('list')}>
+                Task List
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setViewMode('stats')}>
+                Statistics
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 relative",
+                  activeFilterCount > 0 && "text-[#4D45D6] bg-[#4D45D6]/10"
+                )}
+              >
+                <SlidersHorizontal size={16} />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#4D45D6] text-[10px] flex items-center justify-center text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <span className="sr-only">Filter tasks</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto min-w-[200px] max-w-[95vw] sm:w-56">
+              <DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              {/* Completion Status Filter */}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs font-medium pt-1">Status</DropdownMenuLabel>
+                <DropdownMenuCheckboxItem
+                  checked={filters.completionStatus === 'all'}
+                  onCheckedChange={() => setFilters(prev => ({ ...prev, completionStatus: 'all' }))}
                 >
-                  <SlidersHorizontal size={16} />
-                  {activeFilterCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#4D45D6] text-[10px] flex items-center justify-center text-white">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                  <span className="sr-only">Filter tasks</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-auto min-w-[200px] max-w-[95vw] sm:w-56">
-                <DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                
-                {/* Completion Status Filter */}
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-xs font-medium pt-1">Status</DropdownMenuLabel>
+                  All
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={filters.completionStatus === 'active'}
+                  onCheckedChange={() => setFilters(prev => ({ ...prev, completionStatus: 'active' }))}
+                >
+                  Active
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={filters.completionStatus === 'completed'}
+                  onCheckedChange={() => setFilters(prev => ({ ...prev, completionStatus: 'completed' }))}
+                >
+                  Completed
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Priority Filter */}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs font-medium pt-1">Priority</DropdownMenuLabel>
+                {[1, 2, 3].map(priority => (
                   <DropdownMenuCheckboxItem
-                    checked={filters.completionStatus === 'all'}
-                    onCheckedChange={() => setFilters(prev => ({ ...prev, completionStatus: 'all' }))}
+                    key={priority}
+                    checked={filters.priority?.includes(priority) ?? false}
+                    onCheckedChange={(checked) => {
+                      setFilters(prev => {
+                        const currentPriorities = prev.priority || [];
+                        const newPriorities = checked 
+                          ? [...currentPriorities, priority] 
+                          : currentPriorities.filter(p => p !== priority);
+                        
+                        return {
+                          ...prev,
+                          priority: newPriorities.length > 0 ? newPriorities : null
+                        };
+                      });
+                    }}
                   >
-                    All
+                    <span className={cn("pr-1", getPriorityColor(priority))}>●</span> 
+                    {getPriorityLabel(priority)}
                   </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={filters.completionStatus === 'active'}
-                    onCheckedChange={() => setFilters(prev => ({ ...prev, completionStatus: 'active' }))}
-                  >
-                    Active
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={filters.completionStatus === 'completed'}
-                    onCheckedChange={() => setFilters(prev => ({ ...prev, completionStatus: 'completed' }))}
-                  >
-                    Completed
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuGroup>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Priority Filter */}
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-xs font-medium pt-1">Priority</DropdownMenuLabel>
-                  {[1, 2, 3].map(priority => (
-                    <DropdownMenuCheckboxItem
-                      key={priority}
-                      checked={filters.priority?.includes(priority) ?? false}
-                      onCheckedChange={(checked) => {
-                        setFilters(prev => {
-                          const currentPriorities = prev.priority || [];
-                          const newPriorities = checked 
-                            ? [...currentPriorities, priority] 
-                            : currentPriorities.filter(p => p !== priority);
-                          
-                          return {
-                            ...prev,
-                            priority: newPriorities.length > 0 ? newPriorities : null
-                          };
-                        });
-                      }}
-                    >
-                      <span className={cn("pr-1", getPriorityColor(priority))}>●</span> 
-                      {getPriorityLabel(priority)}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuGroup>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Due Date Range Filter */}
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-xs font-medium pt-1">Due Date</DropdownMenuLabel>
-                  <div className="px-2 py-1.5">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal text-xs h-8"
-                            size="sm"
-                          >
-                            <CalendarIcon className="mr-1 h-3 w-3" />
-                            {filters.dueDateRange?.from 
-                              ? format(filters.dueDateRange.from, 'MM/dd/yy') 
-                              : <span>From</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={filters.dueDateRange?.from || undefined}
-                            onSelect={(date) => setFilters(prev => ({
-                              ...prev,
-                              dueDateRange: {
-                                from: date,
-                                to: prev.dueDateRange?.to || null
-                              }
-                            }))}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal text-xs h-8"
-                            size="sm"
-                          >
-                            <CalendarIcon className="mr-1 h-3 w-3" />
-                            {filters.dueDateRange?.to 
-                              ? format(filters.dueDateRange.to, 'MM/dd/yy') 
-                              : <span>To</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                          <Calendar
-                            mode="single"
-                            selected={filters.dueDateRange?.to || undefined}
-                            onSelect={(date) => setFilters(prev => ({
-                              ...prev,
-                              dueDateRange: {
-                                from: prev.dueDateRange?.from || null,
-                                to: date
-                              }
-                            }))}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                </DropdownMenuGroup>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Tags Filter */}
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-xs font-medium pt-1">Tags</DropdownMenuLabel>
-                  {availableTags.length === 0 ? (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                      No tags available
-                    </div>
-                  ) : (
-                    availableTags.map(tag => (
-                      <DropdownMenuCheckboxItem
-                        key={tag}
-                        checked={filters.tags?.includes(tag) ?? false}
-                        onCheckedChange={(checked) => {
-                          setFilters(prev => {
-                            const currentTags = prev.tags || [];
-                            const newTags = checked 
-                              ? [...currentTags, tag] 
-                              : currentTags.filter(t => t !== tag);
-                            
-                            return {
-                              ...prev,
-                              tags: newTags.length > 0 ? newTags : null
-                            };
-                          });
-                        }}
-                      >
-                        <span className="text-xs">{tag}</span>
-                      </DropdownMenuCheckboxItem>
-                    ))
-                  )}
-                </DropdownMenuGroup>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Reset Filters Button */}
-                <DropdownMenuItem 
-                  className="justify-center text-center cursor-pointer"
-                  onClick={resetFilters}
-                  disabled={activeFilterCount === 0}
-                >
-                  <FilterX className="h-4 w-4 mr-1" />
-                  Reset Filters
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="cursor-grab"
-              {...attributes}
-              {...listeners}
-            >
-              <Grip size={16} />
-              <span className="sr-only">Move widget</span>
-            </Button>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="px-2 sm:px-4">
-          <form onSubmit={handleAddTodo} className="flex flex-col space-y-2 mb-4">
-            {!expandedForm ? (
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Add a new task..."
-                  value={newTodo.title || ""}
-                  onChange={(e) => setNewTodo(prev => ({ ...prev, title: e.target.value }))}
-                  className={cn(
-                    "flex-1 bg-background/50",
-                    todoError && "border-red-500"
-                  )}
-                  disabled={isSubmitting}
-                />
-                <Button 
-                  type="button" 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => setExpandedForm(true)}
-                  disabled={isSubmitting}
-                  className="hidden sm:flex"
-                >
-                  <ChevronDown size={16} />
-                </Button>
-                <Button 
-                  type="submit" 
-                  size="sm" 
-                  className="shrink-0 bg-[#4D45D6] hover:bg-[#4D45D6]/90"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4 p-3 bg-background/50 rounded-md">
-                <div>
-                  <Input
-                    placeholder="Task title..."
-                    value={newTodo.title || ""}
-                    onChange={(e) => setNewTodo(prev => ({ ...prev, title: e.target.value }))}
-                    className={cn(
-                      "flex-1 bg-background",
-                      todoError && "border-red-500"
-                    )}
-                    disabled={isSubmitting}
-                  />
-                </div>
-                
-                <div>
-                  <Textarea
-                    placeholder="Description (optional)"
-                    value={newTodo.description || ""}
-                    onChange={(e) => setNewTodo(prev => ({ ...prev, description: e.target.value }))}
-                    className="bg-background"
-                    rows={2}
-                    disabled={isSubmitting}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <Select
-                      value={String(newTodo.priority || 2)}
-                      onValueChange={(value) => setNewTodo(prev => ({ ...prev, priority: Number(value) }))}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="w-full bg-background">
-                        <SelectValue placeholder="Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {priorityOptions.map(option => (
-                          <SelectItem key={option.value} value={String(option.value)}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
+                ))}
+              </DropdownMenuGroup>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Due Date Range Filter */}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs font-medium pt-1">Due Date</DropdownMenuLabel>
+                <div className="px-2 py-1.5">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start text-left font-normal bg-background"
-                          disabled={isSubmitting}
+                          className="w-full justify-start text-left font-normal text-xs h-8"
+                          size="sm"
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? format(selectedDate, 'MMM d, yyyy') : <span>Due date</span>}
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          {filters.dueDateRange?.from 
+                            ? format(filters.dueDateRange.from, 'MM/dd/yy') 
+                            : <span>From</span>}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
+                      <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
+                          selected={filters.dueDateRange?.from || undefined}
+                          onSelect={(date) => setFilters(prev => ({
+                            ...prev,
+                            dueDateRange: {
+                              from: date,
+                              to: prev.dueDateRange?.to || null
+                            }
+                          }))}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal text-xs h-8"
+                          size="sm"
+                        >
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          {filters.dueDateRange?.to 
+                            ? format(filters.dueDateRange.to, 'MM/dd/yy') 
+                            : <span>To</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={filters.dueDateRange?.to || undefined}
+                          onSelect={(date) => setFilters(prev => ({
+                            ...prev,
+                            dueDateRange: {
+                              from: prev.dueDateRange?.from || null,
+                              to: date
+                            }
+                          }))}
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
                   </div>
                 </div>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Tags Filter */}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs font-medium pt-1">Tags</DropdownMenuLabel>
+                {availableTags.length === 0 ? (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    No tags available
+                  </div>
+                ) : (
+                  availableTags.map(tag => (
+                    <DropdownMenuCheckboxItem
+                      key={tag}
+                      checked={filters.tags?.includes(tag) ?? false}
+                      onCheckedChange={(checked) => {
+                        setFilters(prev => {
+                          const currentTags = prev.tags || [];
+                          const newTags = checked 
+                            ? [...currentTags, tag] 
+                            : currentTags.filter(t => t !== tag);
+                          
+                          return {
+                            ...prev,
+                            tags: newTags.length > 0 ? newTags : null
+                          };
+                        });
+                      }}
+                    >
+                      <span className="text-xs">{tag}</span>
+                    </DropdownMenuCheckboxItem>
+                  ))
+                )}
+              </DropdownMenuGroup>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Reset Filters Button */}
+              <DropdownMenuItem 
+                className="justify-center text-center cursor-pointer"
+                onClick={resetFilters}
+                disabled={activeFilterCount === 0}
+              >
+                <FilterX className="h-4 w-4 mr-1" />
+                Reset Filters
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="cursor-grab"
+            {...attributes}
+            {...listeners}
+          >
+            <Grip size={16} />
+            <span className="sr-only">Move widget</span>
+          </Button>
+        </div>
+      </CardHeader>
+      
+      {/* Conditionally render the task list or statistics dashboard based on viewMode */}
+      {viewMode === 'list' ? (
+        <CardContent className="px-2 sm:px-4">
+          <form onSubmit={handleAddTodo} className="flex flex-col space-y-2 mb-4">
+            {!expandedForm ? (
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Add a new task..."
+                  value={newTodo.title}
+                  onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+                  className="flex-1"
+                />
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  <span className="sr-only">Add task</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpandedForm(true)}
+                  className="hidden sm:flex"
+                >
+                  <span className="text-xs">More options</span>
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Input
+                  placeholder="Task title"
+                  value={newTodo.title}
+                  onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+                />
                 
+                <Textarea
+                  placeholder="Description (optional)"
+                  value={newTodo.description || ''}
+                  onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
+                  className="min-h-[80px]"
+                />
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newTodo.due_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newTodo.due_date ? format(new Date(newTodo.due_date), 'PPP') : <span>Set due date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={newTodo.due_date ? new Date(newTodo.due_date) : undefined}
+                        onSelect={(date) => setNewTodo({ ...newTodo, due_date: date ? date.toISOString() : undefined })}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Select
+                    value={newTodo.priority?.toString() || '2'}
+                    onValueChange={(value) => setNewTodo({ ...newTodo, priority: parseInt(value) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorityOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          <div className="flex items-center">
+                            <span className={cn("mr-2", getPriorityColor(option.value))}>●</span>
+                            {option.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Tags input */}
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Add tag..."
+                      placeholder="Add tags..."
                       value={currentTag}
                       onChange={(e) => setCurrentTag(e.target.value)}
-                      className="bg-background"
-                      disabled={isSubmitting}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && currentTag.trim()) {
                           e.preventDefault();
                           addTag();
                         }
                       }}
                     />
-                    <Button
+                    <Button 
                       type="button"
-                      size="sm"
                       variant="outline"
-                      className="bg-[#4D45D6]/10 text-[#4D45D6] hover:bg-[#4D45D6]/20 hover:text-[#4D45D6] flex-shrink-0"
+                      size="icon"
                       onClick={addTag}
-                      disabled={isSubmitting || !currentTag.trim()}
+                      disabled={!currentTag.trim()}
                     >
-                      <TagIcon size={16} />
+                      <Plus className="h-4 w-4" />
+                      <span className="sr-only">Add tag</span>
                     </Button>
                   </div>
                   
                   {(newTodo.tags && newTodo.tags.length > 0) && (
                     <div className="flex flex-wrap gap-1">
-                      {newTodo.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="flex items-center gap-1 bg-[#4D45D6]/10 text-[#4D45D6] hover:bg-[#4D45D6]/20 max-w-full overflow-hidden text-ellipsis">
+                      {newTodo.tags.map((tag, index) => (
+                        <Badge 
+                          key={`${tag}-${index}`}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          <TagIcon className="h-3 w-3" />
                           {tag}
-                          <X
-                            size={12}
-                            className="cursor-pointer hover:text-destructive flex-shrink-0"
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0 hover:bg-transparent"
                             onClick={() => removeTag(tag)}
-                          />
+                          >
+                            <X className="h-3 w-3" />
+                            <span className="sr-only">Remove tag</span>
+                          </Button>
                         </Badge>
                       ))}
                     </div>
                   )}
                 </div>
                 
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
+                <div className="flex justify-between">
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
-                    onClick={resetForm}
-                    disabled={isSubmitting}
+                    onClick={() => {
+                      setExpandedForm(false);
+                      resetForm();
+                    }}
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="bg-[#4D45D6] hover:bg-[#4D45D6]/90"
-                    disabled={isSubmitting || !newTodo.title?.trim()}
-                  >
-                    {isSubmitting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Plus size={16} className="mr-2" />}
+                  <Button type="submit" disabled={isSubmitting || !newTodo.title.trim()}>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Add Task
                   </Button>
                 </div>
-              </div>
-            )}
-            
-            {todoError && !expandedForm && (
-              <div className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} />
-                <span>{todoError}</span>
-              </div>
+              </>
             )}
           </form>
           
-          {/* Search and Sort Controls - update for better responsiveness */}
-          <div className="flex flex-col space-y-2 mb-4">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* Search bar */}
+          <div className="flex space-x-2 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search tasks..."
                 value={filters.searchQuery}
                 onChange={(e) => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
-                className="pl-8 bg-background/50"
+                className="pl-8"
               />
-            </div>
-            
-            <div className="flex flex-wrap gap-1 text-xs">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={cn(
-                  "h-7 px-2 text-xs font-normal",
-                  sortOptions.field === 'title' && "text-[#4D45D6] bg-[#4D45D6]/10"
-                )}
-                onClick={() => toggleSort('title')}
-              >
-                Name{getSortIcon('title')}
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={cn(
-                  "h-7 px-2 text-xs font-normal",
-                  sortOptions.field === 'priority' && "text-[#4D45D6] bg-[#4D45D6]/10"
-                )}
-                onClick={() => toggleSort('priority')}
-              >
-                Priority{getSortIcon('priority')}
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={cn(
-                  "h-7 px-2 text-xs font-normal",
-                  sortOptions.field === 'dueDate' && "text-[#4D45D6] bg-[#4D45D6]/10"
-                )}
-                onClick={() => toggleSort('dueDate')}
-              >
-                Due Date{getSortIcon('dueDate')}
-              </Button>
-              
-              {(sortOptions.field !== 'none' || filters.searchQuery || activeFilterCount > 1) && (
-                activeFilterCount > 2 ? (
-                  <AlertDialog open={showClearFiltersConfirm} onOpenChange={setShowClearFiltersConfirm}>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-7 px-2 text-xs font-normal ml-auto"
-                      >
-                        <FilterX size={12} className="mr-1" />
-                        Clear All
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Clear all filters?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will remove all active filters and sorting. Your current filtered view will be lost.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={resetFilters}>
-                          Clear All
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                ) : (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-7 px-2 text-xs font-normal ml-auto"
-                    onClick={resetFilters}
-                  >
-                    <FilterX size={12} className="mr-1" />
-                    Clear
-                  </Button>
-                )
-              )}
             </div>
           </div>
           
-          {loading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          {/* Sorting controls */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-muted-foreground">
+              {filteredTodos.length} {filteredTodos.length === 1 ? 'task' : 'tasks'} {activeFilterCount > 0 ? '(filtered)' : ''}
             </div>
-          ) : error ? (
-            <div className="text-sm text-red-500 flex items-center gap-1 py-4">
-              <AlertCircle size={14} />
-              <span>Error loading tasks. Please try again later.</span>
+            
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "text-xs h-8 gap-1",
+                  sortOptions.field === 'title' && "bg-muted"
+                )}
+                onClick={() => toggleSort('title')}
+              >
+                Name {getSortIcon('title')}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "text-xs h-8 gap-1",
+                  sortOptions.field === 'priority' && "bg-muted"
+                )}
+                onClick={() => toggleSort('priority')}
+              >
+                Priority {getSortIcon('priority')}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "text-xs h-8 gap-1",
+                  sortOptions.field === 'dueDate' && "bg-muted"
+                )}
+                onClick={() => toggleSort('dueDate')}
+              >
+                Due Date {getSortIcon('dueDate')}
+              </Button>
+            </div>
+          </div>
+          
+          {/* Todo list */}
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : filteredTodos.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              {todos.length === 0 
-                ? "No tasks yet. Add your first task above."
-                : "No tasks match the current filters or search."}
+            <div className="text-center py-8 text-muted-foreground">
+              {filters.searchQuery || activeFilterCount > 0 ? 
+                'No tasks match your filters' : 
+                'No tasks yet. Add one to get started!'}
             </div>
           ) : (
-            <DndContext
+            <DndContext 
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext
+              <SortableContext 
                 items={filteredTodos.map(todo => todo.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {filteredTodos.map((todo) => (
-                    <SortableTaskItem
+                    <SortableTaskItem 
                       key={todo.id}
                       todo={todo}
                       onToggle={handleToggleTodo}
@@ -1289,130 +1260,147 @@ const TodoWidget = ({ id, title, color = "bg-[#32224A]", userId = "demo-user" }:
             </DndContext>
           )}
           
-          {/* Edit Dialog */}
+          {/* Todo edit dialog */}
           <Dialog open={editingTodo !== null} onOpenChange={(open) => {
             if (!open) setEditingTodo(null);
           }}>
-            <DialogContent className="sm:max-w-[425px] max-w-[90vw] w-full">
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle className="text-gradient">Edit Task</DialogTitle>
+                <DialogTitle>Edit Task</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Title</label>
+              
+              {editingTodo && (
+                <div className="space-y-4 py-2">
                   <Input
-                    value={editingTodo?.title || ""}
-                    onChange={(e) => setEditingTodo(prev => ({ ...prev!, title: e.target.value }))}
+                    placeholder="Task title"
+                    value={editingTodo.title}
+                    onChange={(e) => setEditingTodo({ ...editingTodo, title: e.target.value })}
                   />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
+                  
                   <Textarea
-                    value={editingTodo?.description || ""}
-                    onChange={(e) => setEditingTodo(prev => ({ ...prev!, description: e.target.value }))}
-                    rows={2}
+                    placeholder="Description (optional)"
+                    value={editingTodo.description || ''}
+                    onChange={(e) => setEditingTodo({ ...editingTodo, description: e.target.value })}
+                    className="min-h-[100px]"
                   />
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Priority</label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !editingTodo.due_date && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {editingTodo.due_date ? format(new Date(editingTodo.due_date), 'PPP') : <span>Set due date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={editingTodo.due_date ? new Date(editingTodo.due_date) : undefined}
+                          onSelect={(date) => setEditingTodo({ ...editingTodo, due_date: date ? date.toISOString() : undefined })}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
                     <Select
-                      value={String(editingTodo?.priority || 2)}
-                      onValueChange={(value) => setEditingTodo(prev => ({ ...prev!, priority: Number(value) }))}
+                      value={editingTodo.priority?.toString() || '2'}
+                      onValueChange={(value) => setEditingTodo({ ...editingTodo, priority: parseInt(value) })}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger>
                         <SelectValue placeholder="Priority" />
                       </SelectTrigger>
                       <SelectContent>
-                        {priorityOptions.map(option => (
-                          <SelectItem key={option.value} value={String(option.value)}>
-                            {option.label}
+                        {priorityOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            <div className="flex items-center">
+                              <span className={cn("mr-2", getPriorityColor(option.value))}>●</span>
+                              {option.label}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   
+                  {/* Tags input */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Due Date</label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {editingTodo?.due_date ? formatDueDate(editingTodo.due_date) : <span>No date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={editingTodo?.due_date ? new Date(editingTodo.due_date) : undefined}
-                          onSelect={(date) => setEditingTodo(prev => ({ 
-                            ...prev!, 
-                            due_date: date ? format(date, 'yyyy-MM-dd') : undefined 
-                          }))}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Tags</label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add tag..."
-                      value={currentTag}
-                      onChange={(e) => setCurrentTag(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addTagToEdit();
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="bg-[#4D45D6]/10 text-[#4D45D6] hover:bg-[#4D45D6]/20 hover:text-[#4D45D6]"
-                      onClick={addTagToEdit}
-                      disabled={!currentTag.trim()}
-                    >
-                      <TagIcon size={16} />
-                    </Button>
-                  </div>
-                  
-                  {(editingTodo?.tags && editingTodo.tags.length > 0) && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {editingTodo.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="flex items-center gap-1 bg-[#4D45D6]/10 text-[#4D45D6] hover:bg-[#4D45D6]/20">
-                          {tag}
-                          <X
-                            size={12}
-                            className="cursor-pointer hover:text-destructive"
-                            onClick={() => removeTagFromEdit(tag)}
-                          />
-                        </Badge>
-                      ))}
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add tags..."
+                        value={currentTag}
+                        onChange={(e) => setCurrentTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && currentTag.trim()) {
+                            e.preventDefault();
+                            addTagToEdit();
+                          }
+                        }}
+                      />
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={addTagToEdit}
+                        disabled={!currentTag.trim()}
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span className="sr-only">Add tag</span>
+                      </Button>
                     </div>
-                  )}
+                    
+                    {(editingTodo.tags && editingTodo.tags.length > 0) && (
+                      <div className="flex flex-wrap gap-1">
+                        {editingTodo.tags.map((tag, index) => (
+                          <Badge 
+                            key={`${tag}-${index}`}
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            <TagIcon className="h-3 w-3" />
+                            {tag}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 hover:bg-transparent"
+                              onClick={() => removeTagFromEdit(tag)}
+                            >
+                              <X className="h-3 w-3" />
+                              <span className="sr-only">Remove tag</span>
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-                <Button variant="outline" onClick={() => setEditingTodo(null)}>Cancel</Button>
-                <Button className="bg-[#4D45D6] hover:bg-[#4D45D6]/90 mb-2 sm:mb-0" onClick={handleSaveEdit}>Save changes</Button>
+              )}
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingTodo(null)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={isSubmitting || !editingTodo?.title.trim()}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Save Changes
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </CardContent>
-      </ResizableWidget>
-    </div>
+      ) : (
+        <StatisticsDashboard className="border-none shadow-none" />
+      )}
+    </ResizableWidget>
   );
 };
 

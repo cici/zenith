@@ -9,6 +9,8 @@ interface ResizableWidgetProps {
   defaultSize?: number;
   color?: string;
   className?: string;
+  id?: string;
+  title?: string;
 }
 
 const ResizableWidget = ({ 
@@ -16,7 +18,9 @@ const ResizableWidget = ({
   minSize = 20, 
   defaultSize = 70,
   color = "bg-card",
-  className 
+  className,
+  id,
+  title 
 }: ResizableWidgetProps) => {
   return (
     <ResizablePanelGroup 
