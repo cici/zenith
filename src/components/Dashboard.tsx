@@ -15,6 +15,7 @@ import { Undo, Redo, Loader2, RotateCcw, Settings } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast"; // Import useToast
 import { DashboardSettingsPanel } from '@/components/DashboardSettingsPanel'; // Import the panel
 import TodoWidget from '@/components/widgets/TodoWidget'; // Import TodoWidget
+import PomodoroWidget from '@/components/widgets/PomodoroWidget'; // Import PomodoroWidget
 
 // --- Simple Debounce Utility ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,8 +99,8 @@ const Dashboard: React.FC = () => {
   // TODO: Replace these with actual state management and logic
   const [user, setUser] = useState({ id: 'user123', displayName: 'Demo User', email: 'demo@example.com', timezone: 'America/New_York' }); // Example user
   const [currentWidgets, setCurrentWidgets] = useState([
-    { id: 'a', name: 'Widget A', visible: true },
-    { id: 'b', name: 'Widget B (Loading)', visible: true },
+    { id: 'a', name: 'To-Do List', visible: true },
+    { id: 'b', name: 'Pomodoro Timer', visible: true },
     { id: 'c', name: 'Widget C (Error)', visible: true },
     { id: 'd', name: 'Widget D', visible: false },
   ]);
@@ -135,7 +136,7 @@ const Dashboard: React.FC = () => {
   // Create a state to track which widget is in each position
   const [widgetPositions, setWidgetPositions] = useState<{[key: string]: string}>({
     'a': 'todo',
-    'b': 'loading',
+    'b': 'pomodoro',
     'c': 'error',
     'd': 'empty'
   });
@@ -146,6 +147,13 @@ const Dashboard: React.FC = () => {
       id: 'todo', 
       title: 'To-Do List', 
       component: <TodoWidget id="a" />,
+      isLoading: false, 
+      error: undefined 
+    },
+    'pomodoro': { 
+      id: 'pomodoro', 
+      title: 'Pomodoro Timer', 
+      component: <PomodoroWidget id="b" />,
       isLoading: false, 
       error: undefined 
     },

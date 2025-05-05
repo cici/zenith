@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { TodoProvider } from '@/contexts/TodoContext';
+import { TimerProvider } from '@/contexts/TimerContext';
 
 const queryClient = new QueryClient();
 
@@ -19,27 +20,29 @@ const AppContent = () => {
   const userId = user?.id || 'demo-user';
 
   return (
-    <TodoProvider userId={userId}>
-      <BrowserRouter>
-        <Routes>
-          {/* Temporarily redirect root to /index to bypass login (Task #11) */}
-          <Route path="/" element={<Navigate to="/index" replace />} />
-          {/* Original Login Route - commented out for now
-          <Route path="/" element={<LoginForm />} />
-          */}
-          <Route
-            path="/index"
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            }
-          />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TodoProvider>
+    <TimerProvider>
+      <TodoProvider userId={userId}>
+        <BrowserRouter>
+          <Routes>
+            {/* Temporarily redirect root to /index to bypass login (Task #11) */}
+            <Route path="/" element={<Navigate to="/index" replace />} />
+            {/* Original Login Route - commented out for now
+            <Route path="/" element={<LoginForm />} />
+            */}
+            <Route
+              path="/index"
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              }
+            />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TodoProvider>
+    </TimerProvider>
   );
 };
 
