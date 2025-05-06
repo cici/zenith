@@ -1,0 +1,164 @@
+/* Theme color schemes */
+
+/* Default theme (already defined in globals.css) */
+.theme-default {
+  /* Light mode colors are already defined in :root */
+  /* Dark mode colors are already defined in .dark */
+}
+
+/* Blue theme */
+.theme-blue {
+  --primary: 221 83% 53%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 221 83% 53%;
+  
+  --accent: 199 89% 48%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+.dark.theme-blue {
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --accent: 199 89% 48%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+/* Green theme */
+.theme-green {
+  --primary: 142 72% 29%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 141 84% 93%;
+  --secondary-foreground: 142 72% 29%;
+  
+  --accent: 161 94% 30%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+.dark.theme-green {
+  --primary: 142 76% 36%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 143 64% 24%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --accent: 160 84% 39%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+/* Purple theme */
+.theme-purple {
+  --primary: 270 76% 40%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 270 76% 94%;
+  --secondary-foreground: 270 76% 40%;
+  
+  --accent: 262 83% 58%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+.dark.theme-purple {
+  --primary: 270 76% 53%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 270 30% 24%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --accent: 263 70% 50%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+/* Orange theme */
+.theme-orange {
+  --primary: 28 100% 44%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 28 100% 94%;
+  --secondary-foreground: 28 100% 44%;
+  
+  --accent: 32 98% 56%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+.dark.theme-orange {
+  --primary: 28 100% 50%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 28 27% 22%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --accent: 32 98% 56%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+}
+
+/* Font size adjustments */
+.text-size-small {
+  font-size: 0.875rem;
+}
+
+.text-size-medium {
+  font-size: 1rem;
+}
+
+.text-size-large {
+  font-size: 1.125rem;
+}
+
+/* Border radius adjustments */
+.radius-none {
+  --radius: 0;
+}
+
+.radius-small {
+  --radius: 0.25rem;
+}
+
+.radius-medium {
+  --radius: 0.5rem;
+}
+
+.radius-large {
+  --radius: 1rem;
+}
+
+/* Animation settings */
+.no-animations * {
+  animation: none !important;
+  transition: none !important;
+}
+
+.reduced-motion * {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+} 

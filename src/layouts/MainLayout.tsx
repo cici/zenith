@@ -1,17 +1,57 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { MainSidebar } from '@/components/Sidebar';
-import { Button } from '@/components/ui/button';
-import { Sun, Moon, User } from 'lucide-react';
-import { useTheme } from '@/hooks/use-theme';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { User, Settings, LogOut, Palette } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { getProfileById } from '@/services/profileService';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  
+  // Fetch user profile to get avatar URL
+  useEffect(() => {
+    const fetchUserAvatar = async () => {
+      if (user && user.id !== 'demo-user') {
+        try {
+          const profile = await getProfileById(user.id);
+          if (profile?.avatar_url) {
+            setAvatarUrl(profile.avatar_url);
+          }
+        } catch (error) {
+          console.error('Error fetching user avatar:', error);
+        }
+      }
+    };
+    
+    fetchUserAvatar();
+  }, [user]);
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+  
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden">
@@ -24,25 +64,50 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">Dashboard</h2>
               </div>
               <div className="flex items-center gap-6">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleTheme}
-                  className="bg-muted/30 border-border/50"
-                  title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-                >
-                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                </Button>
+                <ThemeToggle />
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src="/placeholder.svg" alt="User avatar" />
-                    <AvatarFallback>
-                      <User size={20} />
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
-                    John Doe
-                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <div className="flex items-center gap-3 cursor-pointer">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={avatarUrl || "/placeholder.svg"} alt="User avatar" />
+                          <AvatarFallback>
+                            <User size={20} />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
+                          {user?.user_metadata?.name || 'User Profile'}
+                        </span>
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Profile</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/theme" className="cursor-pointer">
+                          <Palette className="mr-2 h-4 w-4" />
+                          <span>Theme Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sign out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>

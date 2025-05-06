@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
+import { initializeUserProfile } from '@/services/profileService';
+import { createBucketsIfNeeded } from '@/services/storageService';
 
 // Interface for the auth context value
 interface AuthContextType {
@@ -73,6 +75,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setSession(data.session);
             setUser(data.session.user);
             setError(null);
+            
+            // Initialize storage buckets if needed
+            try {
+              await createBucketsIfNeeded();
+            } catch (storageError) {
+              console.error('Error initializing storage buckets:', storageError);
+            }
+            
+            // Initialize user profile if this is a real user
+            try {
+              await initializeUserProfile(
+                data.session.user.id, 
+                data.session.user.email
+              );
+            } catch (profileError) {
+              console.error('Error initializing user profile:', profileError);
+            }
           }
         }
       } catch (error) {
@@ -100,6 +119,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUsingDemoUser(false);
             setSession(session);
             setUser(session.user);
+            
+            // Initialize storage and profile on auth changes (like sign in)
+            if (event === 'SIGNED_IN') {
+              try {
+                // Initialize storage buckets
+                await createBucketsIfNeeded();
+                
+                // Initialize user profile
+                await initializeUserProfile(
+                  session.user.id, 
+                  session.user.email
+                );
+              } catch (error) {
+                console.error('Error initializing resources on auth change:', error);
+              }
+            }
           } else if (usingDemoUser) {
             // Continue using demo user
             setUser(DEMO_USER);

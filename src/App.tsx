@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
+import ProfilePage from "@/pages/Profile";
+import ThemeManagerPage from "@/pages/ThemeManager";
 import LoginForm from "@/components/LoginForm";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
@@ -11,6 +13,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { TodoProvider } from '@/contexts/TodoContext';
 import { TimerProvider } from '@/contexts/TimerContext';
+import { defaultThemeConfig } from "@/types/theme";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +40,22 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/theme"
+              element={
+                <ProtectedRoute>
+                  <ThemeManagerPage />
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -48,7 +67,7 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="zenith-theme">
+    <ThemeProvider defaultTheme={defaultThemeConfig}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
