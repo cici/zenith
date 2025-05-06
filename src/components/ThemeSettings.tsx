@@ -8,8 +8,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Moon, Sun, Laptop, RefreshCw, Eye, Check, X, MoveHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Moon, Sun, Laptop, RefreshCw, Eye, Check, X, MoveHorizontal, Cloud, CloudOff, DatabaseBackup } from "lucide-react";
 import { ThemeConfig, ColorScheme, ThemeMode, defaultThemeConfig } from "@/types/theme";
+import { useAuth } from "@/hooks/useAuth";
 
 export function ThemeSettings() {
   const { 
@@ -19,14 +21,26 @@ export function ThemeSettings() {
     updateThemePreferences, 
     previewTheme, 
     applyPreviewedTheme, 
-    cancelPreview 
+    cancelPreview,
+    isSyncing
   } = useTheme();
+  
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
 
   // Local state for theme editing
   const [editingTheme, setEditingTheme] = useState<ThemeConfig>({ ...theme });
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [timePickerStart, setTimePickerStart] = useState(preferences.darkModeStartTime || "22:00");
   const [timePickerEnd, setTimePickerEnd] = useState(preferences.darkModeEndTime || "06:00");
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
+  // Update last sync time when syncing completes
+  useEffect(() => {
+    if (!isSyncing) {
+      setLastSyncTime(new Date().toLocaleTimeString());
+    }
+  }, [isSyncing]);
 
   // Update local state when theme changes
   useEffect(() => {
@@ -152,10 +166,28 @@ export function ThemeSettings() {
 
   return (
     <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
+      <CardHeader className="relative">
+        <div className="absolute right-6 top-6 flex gap-2">
+          {isAuthenticated ? (
+            <Badge variant="outline" className="flex gap-1 items-center">
+              {isSyncing ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Cloud className="h-3 w-3" />}
+              {isSyncing ? "Syncing..." : "Cloud Synced"}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="flex gap-1 items-center">
+              <CloudOff className="h-3 w-3" />
+              Local Only
+            </Badge>
+          )}
+        </div>
         <CardTitle>Theme Settings</CardTitle>
         <CardDescription>
           Customize the appearance of your application
+          {lastSyncTime && isAuthenticated && (
+            <span className="text-xs block mt-1 text-muted-foreground">
+              Last synced: {lastSyncTime}
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       
@@ -463,6 +495,24 @@ export function ThemeSettings() {
                   })}
                 />
               </div>
+              
+              {isAuthenticated && (
+                <div className="pt-4 border-t mt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-sm font-medium">Cloud Synchronization</h4>
+                      <p className="text-xs text-muted-foreground">Your preferences are synced across devices</p>
+                    </div>
+                    <DatabaseBackup className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  
+                  <div className="rounded-md bg-muted p-3 text-sm">
+                    <p className="text-muted-foreground">
+                      Theme preferences are automatically synced to your account. Any changes you make will be available on all your devices.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
@@ -505,9 +555,19 @@ export function ThemeSettings() {
             size="sm"
             onClick={applyTheme}
             className="gap-1"
+            disabled={isSyncing}
           >
-            <Check className="h-4 w-4" />
-            Apply Changes
+            {isSyncing ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                Apply Changes
+              </>
+            )}
           </Button>
         </div>
       </CardFooter>

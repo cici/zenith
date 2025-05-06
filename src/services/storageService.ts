@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { ThemePreferences } from '@/types/theme';
 
 /**
  * Interface for upload response
@@ -18,6 +19,7 @@ export enum StorageBucket {
   AVATARS = 'avatars',
   TEMP = 'temp',
   PUBLIC = 'public',
+  PREFERENCES = 'preferences',
 }
 
 /**
@@ -63,6 +65,19 @@ export async function createBucketsIfNeeded(): Promise<void> {
 
     if (tempError && !tempError.message.includes('already exists')) {
       console.error('Error creating temp bucket:', tempError);
+    }
+    
+    // Create preferences bucket for theme and app preferences
+    const { error: preferencesError } = await supabase.storage.createBucket(
+      StorageBucket.PREFERENCES, 
+      { 
+        public: false,
+        fileSizeLimit: 1024 * 1024, // 1MB is plenty for JSON data
+      }
+    );
+
+    if (preferencesError && !preferencesError.message.includes('already exists')) {
+      console.error('Error creating preferences bucket:', preferencesError);
     }
   } catch (error) {
     console.error('Error creating storage buckets:', error);
@@ -252,5 +267,86 @@ export async function listFiles(
     return { 
       error: error instanceof Error ? error : new Error('Unknown error listing files') 
     };
+  }
+}
+
+/**
+ * Saves user theme preferences to Supabase storage as a backup
+ * This is a fallback in case the database preferences service fails
+ * @param userId The user's ID
+ * @param preferences The theme preferences to save
+ * @returns Success status and any error
+ */
+export async function saveUserThemePreferences(
+  userId: string,
+  preferences: ThemePreferences
+): Promise<{ success: boolean; error?: Error }> {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const data = JSON.stringify(preferences);
+    const blob = new Blob([data], { type: 'application/json' });
+    const file = new File([blob], 'theme-preferences.json');
+
+    const filePath = `${userId}/theme-preferences.json`;
+
+    // Upload the file
+    const { error } = await supabase.storage
+      .from(StorageBucket.PREFERENCES)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving user theme preferences:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error : new Error('Unknown error saving preferences')
+    };
+  }
+}
+
+/**
+ * Loads user theme preferences from Supabase storage as a backup
+ * This is a fallback in case the database preferences service fails
+ * @param userId The user's ID
+ * @returns The theme preferences or null if not found
+ */
+export async function loadUserThemePreferences(
+  userId: string
+): Promise<ThemePreferences | null> {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const filePath = `${userId}/theme-preferences.json`;
+
+    // Download the file
+    const { data, error } = await supabase.storage
+      .from(StorageBucket.PREFERENCES)
+      .download(filePath);
+
+    if (error) {
+      if (error.message.includes('Object not found')) {
+        return null;
+      }
+      throw error;
+    }
+
+    // Parse the JSON data
+    const text = await data.text();
+    return JSON.parse(text) as ThemePreferences;
+  } catch (error) {
+    console.error('Error loading user theme preferences:', error);
+    return null;
   }
 } 

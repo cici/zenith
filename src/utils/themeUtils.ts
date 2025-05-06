@@ -1,6 +1,9 @@
 import { ColorScheme, ThemeConfig, ThemeMode, ThemePreferences, defaultThemeConfig, defaultThemePreferences } from "@/types/theme";
+import Cookies from 'js-cookie';
 
 const THEME_STORAGE_KEY = "zenith-theme-preferences";
+const THEME_COOKIE_KEY = "zenith-theme";
+const COOKIE_EXPIRY_DAYS = 90; // 3 months
 
 /**
  * Get the system preferred color scheme
@@ -102,23 +105,76 @@ export function applyThemeConfig(config: ThemeConfig): void {
  * Save theme preferences to local storage
  */
 export function saveThemePreferences(prefs: ThemePreferences): void {
-  localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
+  try {
+    // Save to localStorage if enabled
+    if (prefs.useLocalStorage) {
+      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
+    } else {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    }
+    
+    // Save to cookies if enabled
+    if (prefs.useCookies) {
+      // We only save essential theme settings to cookies to keep size small
+      const essentialThemeData = {
+        mode: prefs.theme.mode,
+        colorScheme: prefs.theme.colorScheme,
+        fontSize: prefs.theme.fontSize
+      };
+      
+      Cookies.set(THEME_COOKIE_KEY, JSON.stringify(essentialThemeData), { 
+        expires: COOKIE_EXPIRY_DAYS,
+        sameSite: 'strict',
+        secure: window.location.protocol === 'https:'
+      });
+    } else {
+      Cookies.remove(THEME_COOKIE_KEY);
+    }
+  } catch (error) {
+    console.error('Failed to save theme preferences:', error);
+  }
 }
 
 /**
- * Load theme preferences from local storage
+ * Load theme preferences from local storage or cookies
  */
 export function loadThemePreferences(): ThemePreferences {
-  const storedPrefs = localStorage.getItem(THEME_STORAGE_KEY);
-  
-  if (!storedPrefs) {
-    return defaultThemePreferences;
-  }
-  
   try {
-    return JSON.parse(storedPrefs) as ThemePreferences;
+    // Try loading from localStorage first
+    const storedPrefs = localStorage.getItem(THEME_STORAGE_KEY);
+    
+    if (storedPrefs) {
+      return JSON.parse(storedPrefs) as ThemePreferences;
+    }
+    
+    // If not in localStorage, try cookies
+    const cookiePrefs = Cookies.get(THEME_COOKIE_KEY);
+    
+    if (cookiePrefs) {
+      try {
+        const cookieThemeData = JSON.parse(cookiePrefs);
+        
+        // Create a complete theme config with cookie data + defaults
+        const themeFromCookie: ThemeConfig = {
+          ...defaultThemeConfig,
+          ...cookieThemeData
+        };
+        
+        // Return preferences with the theme from cookie
+        return {
+          ...defaultThemePreferences,
+          theme: themeFromCookie,
+          useCookies: true, // Set cookies enabled since we found a cookie
+        };
+      } catch (parseError) {
+        console.error('Failed to parse theme cookie:', parseError);
+      }
+    }
+    
+    // If no stored preferences are found or valid, return defaults
+    return defaultThemePreferences;
   } catch (error) {
-    console.error("Failed to parse stored theme preferences:", error);
+    console.error("Failed to load theme preferences:", error);
     return defaultThemePreferences;
   }
 }

@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ThemeConfig, ThemeMode, ThemePreferences, ColorScheme, defaultThemeConfig, defaultThemePreferences } from '@/types/theme';
 import { applyThemeConfig, loadThemePreferences, saveThemePreferences, shouldUseDarkMode } from '@/utils/themeUtils';
+import { loadUserPreferences, saveUserPreferences, syncPreferences } from '@/services/preferenceService';
+import { useAuth } from '@/hooks/useAuth';
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -19,6 +21,7 @@ type ThemeProviderState = {
   previewTheme: (theme: ThemeConfig) => void;
   applyPreviewedTheme: () => void;
   cancelPreview: () => void;
+  isSyncing: boolean;
 };
 
 const initialState: ThemeProviderState = {
@@ -32,6 +35,7 @@ const initialState: ThemeProviderState = {
   previewTheme: () => null,
   applyPreviewedTheme: () => null,
   cancelPreview: () => null,
+  isSyncing: false,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
@@ -41,6 +45,9 @@ export function ThemeProvider({
   defaultTheme = defaultThemeConfig,
   ...props
 }: ThemeProviderProps) {
+  // Get user from auth context
+  const { user } = useAuth();
+  
   // Main theme configuration
   const [theme, setThemeState] = useState<ThemeConfig>(defaultTheme);
   
@@ -52,16 +59,45 @@ export function ThemeProvider({
   
   // Auto dark mode timer
   const [autoDarkModeTimer, setAutoDarkModeTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  // Syncing state
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
-  // Load saved preferences on initial render
+  // Load initial preferences from local storage
   useEffect(() => {
-    const savedPreferences = loadThemePreferences();
-    setPreferences(savedPreferences);
-    setThemeState(savedPreferences.theme);
+    const localPreferences = loadThemePreferences();
+    setPreferences(localPreferences);
+    setThemeState(localPreferences.theme);
     
     // Apply the theme immediately
-    applyThemeConfig(savedPreferences.theme);
+    applyThemeConfig(localPreferences.theme);
   }, []);
+
+  // Sync with database when user changes or preferences change
+  useEffect(() => {
+    const syncWithDatabase = async () => {
+      if (!user) return;
+      
+      try {
+        setIsSyncing(true);
+        // Get synced preferences
+        const syncedPreferences = await syncPreferences(user.id, preferences);
+        
+        if (JSON.stringify(syncedPreferences) !== JSON.stringify(preferences)) {
+          setPreferences(syncedPreferences);
+          setThemeState(syncedPreferences.theme);
+          applyThemeConfig(syncedPreferences.theme);
+          saveThemePreferences(syncedPreferences);
+        }
+      } catch (error) {
+        console.error('Failed to sync preferences with database:', error);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+    
+    syncWithDatabase();
+  }, [user, preferences.useCookies]); // Only re-sync when user or feature flags change
 
   // Set up auto dark mode timer if enabled
   useEffect(() => {
@@ -102,8 +138,22 @@ export function ThemeProvider({
       const updatedPreferences = { ...preferences, theme };
       setPreferences(updatedPreferences);
       saveThemePreferences(updatedPreferences);
+      
+      // Save to database if user is authenticated
+      if (user) {
+        saveUserPreferencesToDatabase(user.id, updatedPreferences);
+      }
     }
   }, [theme, previewingTheme]);
+
+  // Save preferences to database
+  const saveUserPreferencesToDatabase = async (userId: string, prefs: ThemePreferences) => {
+    try {
+      await saveUserPreferences(userId, prefs);
+    } catch (error) {
+      console.error('Failed to save preferences to database:', error);
+    }
+  };
 
   // Update the entire theme
   const setTheme = (newTheme: ThemeConfig) => {
@@ -133,6 +183,11 @@ export function ThemeProvider({
     const updatedPreferences = { ...preferences, ...prefs };
     setPreferences(updatedPreferences);
     saveThemePreferences(updatedPreferences);
+    
+    // Save to database if user is authenticated
+    if (user) {
+      saveUserPreferencesToDatabase(user.id, updatedPreferences);
+    }
   };
 
   // Preview a theme without saving it
@@ -164,6 +219,7 @@ export function ThemeProvider({
     previewTheme,
     applyPreviewedTheme,
     cancelPreview,
+    isSyncing,
   };
 
   return (
