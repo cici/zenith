@@ -4,6 +4,7 @@ import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import ProfilePage from "@/pages/Profile";
 import ThemeManagerPage from "@/pages/ThemeManager";
+import AccountManagerPage from "@/pages/AccountManager";
 import LoginForm from "@/components/LoginForm";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
@@ -56,6 +57,14 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <AccountManagerPage />
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -67,15 +76,15 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme={defaultThemeConfig}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider defaultTheme={defaultThemeConfig}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
           <AppContent />
-        </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

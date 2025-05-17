@@ -16,6 +16,8 @@ import { useToast } from "@/components/ui/use-toast"; // Import useToast
 import { DashboardSettingsPanel } from '@/components/DashboardSettingsPanel'; // Import the panel
 import TodoWidget from '@/components/widgets/TodoWidget'; // Import TodoWidget
 import PomodoroWidget from '@/components/widgets/PomodoroWidget'; // Import PomodoroWidget
+import { WeatherWidget } from '@/components/widgets/WeatherWidget'; // Import WeatherWidget
+import ExerciseWidget from '@/components/widgets/ExerciseWidget'; // Import ExerciseWidget
 
 // --- Simple Debounce Utility ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,7 +88,11 @@ interface WidgetDefinition {
   error?: string | undefined;
 }
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onAddWidgetClick: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
   const [layouts, setLayouts] = useState<GridLayouts>(initialLayouts); // Use renamed type
   const [history, setHistory] = useState<GridLayouts[]>([initialLayouts]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
@@ -137,8 +143,8 @@ const Dashboard: React.FC = () => {
   const [widgetPositions, setWidgetPositions] = useState<{[key: string]: string}>({
     'a': 'todo',
     'b': 'pomodoro',
-    'c': 'error',
-    'd': 'empty'
+    'c': 'weather',
+    'd': 'exercise'
   });
   
   // Define the available widget types
@@ -156,6 +162,20 @@ const Dashboard: React.FC = () => {
       component: <PomodoroWidget id="b" />,
       isLoading: false, 
       error: undefined 
+    },
+    'weather': {
+      id: 'weather',
+      title: 'Weather',
+      component: <WeatherWidget />,
+      isLoading: false,
+      error: undefined
+    },
+    'exercise': {
+      id: 'exercise',
+      title: 'Exercise Tracking',
+      component: <ExerciseWidget id="exercise" title="Exercise Tracking" />,
+      isLoading: false,
+      error: undefined
     },
     'loading': { 
       id: 'loading', 
@@ -356,6 +376,14 @@ const Dashboard: React.FC = () => {
             <Settings className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+      <div className="flex justify-end mb-4">
+        <Button
+          onClick={onAddWidgetClick}
+          className="gap-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+        >
+          + Add Widget
+        </Button>
       </div>
       {isLoaded ? (
         <ResponsiveGridLayout

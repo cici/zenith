@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { MainSidebar } from '@/components/Sidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { User, Settings, LogOut, Palette } from 'lucide-react';
+import { User, Settings, LogOut, Palette, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getProfileById } from '@/services/profileService';
+import { WeatherWidget } from '@/components/widgets/WeatherWidget';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -54,7 +55,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden">
+      <div className="flex h-screen w-full">
         <MainSidebar />
         <SidebarInset className="bg-gradient-to-b from-background to-background/95 w-full">
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-b-muted/20 py-4">
@@ -90,6 +91,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
+                        <Link to="/account" className="cursor-pointer">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Account Security</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link to="/theme" className="cursor-pointer">
                           <Palette className="mr-2 h-4 w-4" />
                           <span>Theme Settings</span>
@@ -112,7 +119,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </div>
             </div>
           </header>
-          <main className="container py-6 px-6">{children}</main>
+          <main className="container py-6 px-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 64px)' }}>
+            {children}
+          </main>
         </SidebarInset>
       </div>
     </SidebarProvider>
