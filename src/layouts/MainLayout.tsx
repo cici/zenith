@@ -119,7 +119,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </div>
             </div>
           </header>
-          <main className="container py-6 px-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 64px)' }}>
+          <main className="container py-6 px-6 overflow-y-auto scrollable-main" style={{ maxHeight: 'calc(100vh - 64px)' }}>
             {children}
           </main>
         </SidebarInset>

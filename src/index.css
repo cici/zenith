@@ -138,3 +138,8 @@
 body {
   margin: 0;
 }
+
+.scrollable-main {
+  touch-action: auto;
+  -webkit-overflow-scrolling: touch;
+}
