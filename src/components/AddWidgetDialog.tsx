@@ -1,7 +1,6 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ListChecks, Activity } from "lucide-react";
+import { ListChecks, Activity, Clock, Cloud, Music } from "lucide-react";
 
 type AddWidgetDialogProps = {
   open: boolean;
@@ -23,6 +22,24 @@ const AddWidgetDialog = ({ open, onOpenChange, onAddWidget }: AddWidgetDialogPro
       description: "Log your workouts and track your fitness progress.",
       icon: <Activity className="h-8 w-8 text-primary" />,
     },
+    {
+      type: "pomodoro",
+      title: "Pomodoro Timer",
+      description: "Boost focus with the Pomodoro technique and session timer.",
+      icon: <Clock className="h-8 w-8 text-primary" />,
+    },
+    {
+      type: "weather",
+      title: "Weather",
+      description: "See current weather and forecasts for your location.",
+      icon: <Cloud className="h-8 w-8 text-primary" />,
+    },
+    {
+      type: "guitar",
+      title: "Guitar Practice",
+      description: "Track your guitar practice sessions, techniques, and progress.",
+      icon: <Music className="h-8 w-8 text-primary" />,
+    },
   ];
 
   return (
@@ -36,12 +53,12 @@ const AddWidgetDialog = ({ open, onOpenChange, onAddWidget }: AddWidgetDialogPro
             <Button
               key={widget.type}
               variant="outline"
-              className="h-auto flex-col items-center justify-start p-4 gap-2 hover:bg-accent"
+              className="h-auto w-full flex-col items-center justify-start p-4 gap-2 hover:bg-accent text-center"
               onClick={() => onAddWidget(widget.type)}
             >
               <div className="rounded-full bg-primary/10 p-2">{widget.icon}</div>
               <div className="font-medium">{widget.title}</div>
-              <div className="text-xs text-muted-foreground text-center">
+              <div className="text-xs text-muted-foreground text-center break-words whitespace-normal">
                 {widget.description}
               </div>
             </Button>

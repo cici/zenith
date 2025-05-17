@@ -405,7 +405,7 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
     <Card className="h-full overflow-hidden" style={getFontStyle()}>
       <CardHeader className={color}>
         <div className="flex justify-between items-center">
-          <CardTitle>{title}</CardTitle>
+          <div />
           <div className="flex space-x-1">
             <Button 
               variant="ghost" 

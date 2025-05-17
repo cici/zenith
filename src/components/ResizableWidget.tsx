@@ -33,7 +33,7 @@ const ResizableWidget = ({
         maxSize={98}
         className="transition-all duration-200 ease-in-out"
       >
-        <Card className={cn("h-full shadow-lg overflow-y-auto", color)}>
+        <Card className={cn("h-full shadow-lg overflow-visible", color)}>
           {children}
         </Card>
       </ResizablePanel>

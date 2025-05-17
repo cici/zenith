@@ -168,7 +168,7 @@ const ExerciseWidget = ({ id, title, color = "bg-card" }: ExerciseWidgetProps) =
     <div ref={setNodeRef} style={style}>
       <ResizableWidget color={color} minSize={15} defaultSize={30}>
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <CardTitle className="text-lg font-medium">{title}</CardTitle>
+          <div />
           <Button
             variant="ghost"
             size="icon"

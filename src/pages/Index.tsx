@@ -16,6 +16,14 @@ const Index: React.FC = () => {
   return (
     <MainLayout>
       <Dashboard onAddWidgetClick={() => setIsAddWidgetOpen(true)} />
+      <AddWidgetDialog
+        open={isAddWidgetOpen}
+        onOpenChange={setIsAddWidgetOpen}
+        onAddWidget={(type) => {
+          // TODO: Implement logic to add the widget to the dashboard
+          setIsAddWidgetOpen(false);
+        }}
+      />
     </MainLayout>
   );
 };

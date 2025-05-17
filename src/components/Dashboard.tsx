@@ -18,6 +18,7 @@ import TodoWidget from '@/components/widgets/TodoWidget'; // Import TodoWidget
 import PomodoroWidget from '@/components/widgets/PomodoroWidget'; // Import PomodoroWidget
 import { WeatherWidget } from '@/components/widgets/WeatherWidget'; // Import WeatherWidget
 import ExerciseWidget from '@/components/widgets/ExerciseWidget'; // Import ExerciseWidget
+import GuitarPracticeWidget from '@/components/widgets/GuitarPracticeWidget';
 
 // --- Simple Debounce Utility ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,30 +47,35 @@ const initialLayouts: GridLayouts = {
     { i: 'b', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 8, maxH: 4 },
     { i: 'c', x: 8, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
     { i: 'd', x: 0, y: 2, w: 12, h: 2, minW: 3, minH: 1, maxW: 12, maxH: 4 },
+    { i: 'e', x: 0, y: 4, w: 12, h: 2, minW: 3, minH: 1, maxW: 12, maxH: 4 },
   ],
   md: [
     { i: 'a', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 4 },
     { i: 'b', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 4 },
     { i: 'c', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 4 },
     { i: 'd', x: 0, y: 2, w: 9, h: 2, minW: 3, minH: 1, maxW: 9, maxH: 4 },
+    { i: 'e', x: 0, y: 4, w: 9, h: 2, minW: 3, minH: 1, maxW: 9, maxH: 4 },
   ],
   sm: [
     { i: 'a', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
     { i: 'b', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
     { i: 'c', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
     { i: 'd', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
+    { i: 'e', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
   ],
   xs: [
     { i: 'a', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
     { i: 'b', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
     { i: 'c', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
     { i: 'd', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
+    { i: 'e', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
   ],
   xxs: [
     { i: 'a', x: 0, y: 0, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
     { i: 'b', x: 0, y: 2, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
     { i: 'c', x: 0, y: 4, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
     { i: 'd', x: 0, y: 6, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
+    { i: 'e', x: 0, y: 8, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
   ],
 };
 
@@ -144,7 +150,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
     'a': 'todo',
     'b': 'pomodoro',
     'c': 'weather',
-    'd': 'exercise'
+    'd': 'exercise',
+    'e': 'guitar',
   });
   
   // Define the available widget types
@@ -174,6 +181,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
       id: 'exercise',
       title: 'Exercise Tracking',
       component: <ExerciseWidget id="exercise" title="Exercise Tracking" />,
+      isLoading: false,
+      error: undefined
+    },
+    'guitar': {
+      id: 'guitar',
+      title: 'Guitar Practice',
+      component: <GuitarPracticeWidget id="guitar" title="Guitar Practice" />, 
       isLoading: false,
       error: undefined
     },
@@ -349,7 +363,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
   return (
     <div className="flex flex-col min-h-screen p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex space-x-2 items-center"> {/* Use items-center */}
           {/* Saving Indicator */}
           {isSaving && (
