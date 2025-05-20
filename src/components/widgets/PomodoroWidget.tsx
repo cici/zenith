@@ -61,6 +61,8 @@ import { TaskSelector } from '@/components/TaskSelector';
 import { Separator } from "@/components/ui/separator";
 import { formatDuration } from '@/utils/timeUtils';
 import { TaskStatisticsView } from '@/components/TaskStatisticsView';
+import { pomodoroWidgetConfigSchema } from "./pomodoroConfigSchema";
+import { WidgetConfigPanel } from "@/components/WidgetConfigPanel";
 
 interface PomodoroWidgetProps {
   id: string;
@@ -254,7 +256,21 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
     eventEmitter,
   } = useTimer();
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [config, setConfig] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem("pomodoroWidgetConfig") : null;
+    if (saved) return JSON.parse(saved);
+    const defaults: Record<string, any> = {};
+    pomodoroWidgetConfigSchema.fields.forEach(f => (defaults[f.name] = f.default));
+    return defaults;
+  });
+  useEffect(() => {
+    localStorage.setItem("pomodoroWidgetConfig", JSON.stringify(config));
+  }, [config]);
+  const handleConfigChange = (name: string, value: any) => {
+    setConfig(prev => ({ ...prev, [name]: value }));
+  };
+
   const [statsOpen, setStatsOpen] = useState(false);
   const [newSettings, setNewSettings] = useState({ ...settings });
   const [eventLog, setEventLog] = useState<{event: string, time: string, data?: any}[]>([]);
@@ -324,7 +340,7 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
   // Save settings
   const saveSettings = () => {
     updateSettings(newSettings);
-    setSettingsOpen(false);
+    setIsConfigOpen(false);
   };
 
   // Calculate timer progress using our enhanced progress method
@@ -402,43 +418,55 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
   };
 
   return (
-    <Card className="h-full overflow-hidden" style={getFontStyle()}>
-      <CardHeader className={color}>
-        <div className="flex justify-between items-center">
-          <div />
-          <div className="flex space-x-1">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setStatsOpen(true)}
-              className="h-8 w-8"
-            >
-              <BarChart4 className="h-4 w-4" />
+    <Card className="h-full overflow-hidden" style={{ ...getFontStyle(), backgroundColor: config.themeColor || color }}>
+      <CardContent className="flex flex-col items-center p-4 h-full">
+        {/* Unified Header Bar */}
+        <div className="flex items-center justify-between w-full px-2 py-2 border-b mb-4">
+          <div className="flex items-center gap-2">
+            <Clock className="h-6 w-6 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-transparent bg-clip-text" />
+            <span className="font-poppins font-semibold text-lg">Pomodoro</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-white shadow">
+              {getModeDisplayText(state.mode)}
+            </span>
+            {state.isRunning ? (
+              <Button variant="ghost" size="icon" aria-label="Pause" onClick={pauseTimer}>
+                <Pause className="h-5 w-5" />
+              </Button>
+            ) : state.isPaused ? (
+              <Button variant="ghost" size="icon" aria-label="Resume" onClick={resumeTimer}>
+                <Play className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" aria-label="Start" onClick={startTimer}>
+                <Play className="h-5 w-5" />
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" aria-label="Reset" onClick={resetTimer}>
+              <RotateCcw className="h-5 w-5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="h-8 w-8"
-            >
-              <Settings className="h-4 w-4" />
+            <Button variant="ghost" size="icon" aria-label="Skip" onClick={skipTimer}>
+              <SkipForward className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Settings" onClick={() => setIsConfigOpen(true)}>
+              <Settings className="h-5 w-5" />
             </Button>
           </div>
         </div>
-      </CardHeader>
-      
-      <CardContent className="flex flex-col items-center justify-center p-4 h-full">
         {/* Mode indicator and timer display */}
         <div className="text-center mb-5 w-full">
-          <span className={`text-sm font-medium`} style={{ color: getModeBackgroundColor(state.mode, settings) }}>
-            {getModeDisplayText(state.mode)}
-          </span>
-          
-          {/* Timer progress circle - conditionally rendered based on settings */}
           {settings.showProgressCircle && (
             <div className={`relative mx-auto my-3 flex items-center justify-center ${getCircleSize()}`}>
-              {/* SVG Circle for Progress */}
+              {/* SVG Circle for Progress with Zenith gradient */}
               <svg className="absolute" width="100%" height="100%" viewBox="0 0 208 208">
+                <defs>
+                  <linearGradient id="zenith-gradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#a21caf" /> {/* purple-500 */}
+                    <stop offset="50%" stopColor="#3b82f6" /> {/* blue-500 */}
+                    <stop offset="100%" stopColor="#22d3ee" /> {/* cyan-400 */}
+                  </linearGradient>
+                </defs>
                 <circle
                   className="text-gray-200 dark:text-gray-700"
                   strokeWidth={settings.progressCircleWidth}
@@ -453,14 +481,13 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
                   strokeDasharray="590"
                   strokeDashoffset={590 - (590 * progress) / 100}
                   strokeLinecap="round"
-                  stroke={getModeBackgroundColor(state.mode, settings)}
+                  stroke="url(#zenith-gradient)"
                   fill="transparent"
                   r="94"
                   cx="104"
                   cy="104"
                 />
               </svg>
-              
               {/* Timer text */}
               <div className="absolute flex flex-col items-center">
                 <span className="text-5xl font-bold">
@@ -504,22 +531,18 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
             </div>
           )}
           
-          {/* Alternative timer display for when progress circle is hidden */}
           {!settings.showProgressCircle && (
             <div className="my-8 flex flex-col items-center">
               <span className="text-6xl font-bold my-4">
                 {formatTimeRemaining()}
               </span>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden mb-6">
+              <div className="w-full h-2 rounded-full overflow-hidden mb-4 bg-gray-200 dark:bg-gray-700">
                 <div 
-                  className="h-2 rounded-full" 
-                  style={{ 
-                    width: `${progress}%`, 
-                    backgroundColor: getModeBackgroundColor(state.mode, settings) 
-                  }}
+                  className="h-2 rounded-full bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400"
+                  style={{ width: `${progress}%` }}
                 />
               </div>
-              <div className="flex mt-2 space-x-2">
+              <div className="flex mt-4 gap-2">
                 <Button 
                   variant="outline" 
                   size="icon" 
@@ -558,10 +581,10 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
           
           {/* Completed Pomodoros - conditionally rendered based on settings */}
           {settings.showCompletedCount && (
-            <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-2 mb-0 text-xs text-muted-foreground text-center w-full">
               <span>Completed: {state.completedPomodoros} pomodoros</span>
               {sessionData && (
-                <div className="text-xs mt-1">
+                <div className="text-[10px] mt-1">
                   Today: {sessionData.completedPomodoros} completed
                 </div>
               )}
@@ -569,544 +592,28 @@ const PomodoroWidget = ({ id, title = "Pomodoro Timer", color = "bg-[#2A2349]" }
           )}
         </div>
         
-        {/* Control buttons */}
-        <div className="flex items-center justify-center space-x-3 mt-auto mb-2">
-          {state.isRunning ? (
-            <Button variant="outline" size="icon" onClick={pauseTimer}>
-              <Pause className="h-5 w-5" />
-            </Button>
-          ) : state.isPaused ? (
-            <Button variant="outline" size="icon" onClick={resumeTimer}>
-              <Play className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button variant="outline" size="icon" onClick={startTimer}>
-              <Play className="h-5 w-5" />
-            </Button>
-          )}
-          <Button variant="outline" size="icon" onClick={resetTimer}>
-            <RotateCcw className="h-5 w-5" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={skipTimer}>
-            <SkipForward className="h-5 w-5" />
-          </Button>
-        </div>
-        
         {/* Task selector */}
-        <div className="mt-2 mb-4 px-2">
+        <div className="mt-2 mb-0 px-2 w-full">
           <TaskSelector />
         </div>
       </CardContent>
       
       {/* Settings Dialog */}
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Timer Settings</DialogTitle>
+            <DialogTitle>Pomodoro Widget Settings</DialogTitle>
           </DialogHeader>
-          
-          <Tabs 
-            defaultValue="durations" 
-            value={activeTab}
-            onValueChange={(value) => {
-              setActiveTab(value);
-              if (value === 'appearance') {
-                setHasVisitedAppearance(true);
-              }
-              if (value === 'notifications') {
-                setHasVisitedNotifications(true);
-                // Request notification permission when user visits tab
-                if (newSettings.desktopNotificationsEnabled) {
-                  requestNotificationPermission();
-                }
-              }
-            }}
-          >
-            <TabsList className="grid grid-cols-5">
-              <TabsTrigger value="durations">Time</TabsTrigger>
-              <TabsTrigger value="behaviors">Behavior</TabsTrigger>
-              <TabsTrigger value="appearance">
-                <div className="flex items-center">
-                  <Palette className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Look</span>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger value="notifications">
-                <div className="flex items-center">
-                  <Bell className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Alerts</span>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger value="developer">
-                <div className="flex items-center">
-                  <Bug className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Dev</span>
-                </div>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="durations" className="space-y-4 py-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Focus Duration: {newSettings.workDuration} min</Label>
-                </div>
-                <Slider 
-                  min={1} 
-                  max={60} 
-                  step={1} 
-                  value={[newSettings.workDuration]} 
-                  onValueChange={(value) => handleSettingsChange('workDuration', value[0])} 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Short Break Duration: {newSettings.shortBreakDuration} min</Label>
-                </div>
-                <Slider 
-                  min={1} 
-                  max={30} 
-                  step={1} 
-                  value={[newSettings.shortBreakDuration]} 
-                  onValueChange={(value) => handleSettingsChange('shortBreakDuration', value[0])} 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Long Break Duration: {newSettings.longBreakDuration} min</Label>
-                </div>
-                <Slider 
-                  min={1} 
-                  max={60} 
-                  step={1} 
-                  value={[newSettings.longBreakDuration]} 
-                  onValueChange={(value) => handleSettingsChange('longBreakDuration', value[0])} 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Long Break After: {newSettings.longBreakInterval} pomodoros</Label>
-                </div>
-                <Slider 
-                  min={1} 
-                  max={8} 
-                  step={1} 
-                  value={[newSettings.longBreakInterval]} 
-                  onValueChange={(value) => handleSettingsChange('longBreakInterval', value[0])} 
-                />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="behaviors" className="space-y-4 py-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="auto-start-breaks">Auto-start breaks</Label>
-                <Switch 
-                  id="auto-start-breaks" 
-                  checked={newSettings.autoStartBreaks}
-                  onCheckedChange={(checked) => handleSettingsChange('autoStartBreaks', checked)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="auto-start-pomodoros">Auto-start pomodoros</Label>
-                <Switch 
-                  id="auto-start-pomodoros" 
-                  checked={newSettings.autoStartPomodoros}
-                  onCheckedChange={(checked) => handleSettingsChange('autoStartPomodoros', checked)}
-                />
-              </div>
-
-              <Separator className="my-4" />
-              
-              <h3 className="text-sm font-medium mb-2">Task Association</h3>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="auto-associate-last-task">Auto-associate last task</Label>
-                <Switch 
-                  id="auto-associate-last-task" 
-                  checked={newSettings.autoAssociateLastTask}
-                  onCheckedChange={(checked) => handleSettingsChange('autoAssociateLastTask', checked)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="track-time-per-task">Track time per task</Label>
-                <Switch 
-                  id="track-time-per-task" 
-                  checked={newSettings.trackTimePerTask}
-                  onCheckedChange={(checked) => handleSettingsChange('trackTimePerTask', checked)}
-                />
-              </div>
-              
-              <div className="text-xs text-muted-foreground mt-1">
-                <p>Track how much time you spend on each task to improve your productivity estimates.</p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="appearance" className="space-y-4 py-4">
-              {hasVisitedAppearance && (
-                <>
-                  {/* Theme Selection */}
-                  <div className="space-y-2">
-                    <Label>Theme</Label>
-                    <Select
-                      value={newSettings.theme}
-                      onValueChange={(value: 'default' | 'modern' | 'minimal' | 'classic' | 'dark') => 
-                        applyThemePreset(value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a theme" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="default">Default</SelectItem>
-                        <SelectItem value="modern">Modern</SelectItem>
-                        <SelectItem value="minimal">Minimal</SelectItem>
-                        <SelectItem value="classic">Classic</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Color Customization */}
-                  <div className="grid grid-cols-3 gap-4 my-4">
-                    <div>
-                      <Label className="block mb-2 text-xs">Work Color</Label>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-6 h-6 rounded-full border"
-                          style={{ backgroundColor: newSettings.workColor }}
-                        />
-                        <Input
-                          type="color"
-                          value={newSettings.workColor}
-                          onChange={(e) => handleSettingsChange('workColor', e.target.value)}
-                          className="w-full h-8"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="block mb-2 text-xs">Short Break</Label>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-6 h-6 rounded-full border"
-                          style={{ backgroundColor: newSettings.shortBreakColor }}
-                        />
-                        <Input
-                          type="color"
-                          value={newSettings.shortBreakColor}
-                          onChange={(e) => handleSettingsChange('shortBreakColor', e.target.value)}
-                          className="w-full h-8"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="block mb-2 text-xs">Long Break</Label>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-6 h-6 rounded-full border"
-                          style={{ backgroundColor: newSettings.longBreakColor }}
-                        />
-                        <Input
-                          type="color"
-                          value={newSettings.longBreakColor}
-                          onChange={(e) => handleSettingsChange('longBreakColor', e.target.value)}
-                          className="w-full h-8"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Font Selection */}
-                  <div className="space-y-2">
-                    <Label>Font Family</Label>
-                    <Select
-                      value={newSettings.fontFamily}
-                      onValueChange={(value) => handleSettingsChange('fontFamily', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a font" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fontOptions.map(font => (
-                          <SelectItem 
-                            key={font.value} 
-                            value={font.value}
-                            style={{ fontFamily: font.value }}
-                          >
-                            {font.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Progress Circle Options */}
-                  <div className="space-y-3 border-t pt-3 mt-4">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="show-progress-circle" className="flex items-center">
-                        <CircleDashed className="w-4 h-4 mr-2" />
-                        Show Progress Circle
-                      </Label>
-                      <Switch 
-                        id="show-progress-circle" 
-                        checked={newSettings.showProgressCircle}
-                        onCheckedChange={(checked) => handleSettingsChange('showProgressCircle', checked)}
-                      />
-                    </div>
-                    
-                    {newSettings.showProgressCircle && (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Circle Size</Label>
-                          <Select
-                            value={newSettings.progressCircleSize}
-                            onValueChange={(value: 'small' | 'medium' | 'large') => 
-                              handleSettingsChange('progressCircleSize', value)
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="small">Small</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="large">Large</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label>Circle Width: {newSettings.progressCircleWidth}px</Label>
-                          </div>
-                          <Slider 
-                            min={2} 
-                            max={20} 
-                            step={1} 
-                            value={[newSettings.progressCircleWidth]} 
-                            onValueChange={(value) => handleSettingsChange('progressCircleWidth', value[0])} 
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Display Options */}
-                  <div className="flex items-center justify-between border-t pt-3 mt-4">
-                    <Label htmlFor="show-completed-count" className="flex items-center">
-                      <Eye className="w-4 h-4 mr-2" />
-                      Show Completed Count
-                    </Label>
-                    <Switch 
-                      id="show-completed-count" 
-                      checked={newSettings.showCompletedCount}
-                      onCheckedChange={(checked) => handleSettingsChange('showCompletedCount', checked)}
-                    />
-                  </div>
-                </>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="notifications" className="space-y-4 py-4">
-              {hasVisitedNotifications && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="desktop-notifications" className="flex items-center">
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Desktop Notifications
-                    </Label>
-                    <Switch 
-                      id="desktop-notifications" 
-                      checked={newSettings.desktopNotificationsEnabled}
-                      onCheckedChange={(checked) => {
-                        handleSettingsChange('desktopNotificationsEnabled', checked);
-                        if (checked) {
-                          requestNotificationPermission();
-                        }
-                      }}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="sound-notifications" className="flex items-center">
-                      <Volume2 className="w-4 h-4 mr-2" />
-                      Sound Notifications
-                    </Label>
-                    <Switch 
-                      id="sound-notifications" 
-                      checked={newSettings.soundNotificationsEnabled}
-                      onCheckedChange={(checked) => handleSettingsChange('soundNotificationsEnabled', checked)}
-                    />
-                  </div>
-                  
-                  {newSettings.soundNotificationsEnabled && (
-                    <>
-                      <div className="space-y-2 mt-4 pt-3 border-t">
-                        <div className="flex items-center justify-between">
-                          <Label>Volume: {newSettings.notificationVolume}%</Label>
-                        </div>
-                        <div className="flex items-center px-1">
-                          <VolumeX className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <Slider 
-                            min={0} 
-                            max={100} 
-                            step={5} 
-                            value={[newSettings.notificationVolume]} 
-                            onValueChange={(value) => handleSettingsChange('notificationVolume', value[0])} 
-                            className="flex-1 mx-2"
-                          />
-                          <Volume2 className="h-4 w-4 ml-2 text-muted-foreground" />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4 mt-4 pt-3 border-t">
-                        <Label>Work Complete Sound</Label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {['bell', 'digital', 'calm', 'alert', 'gong', 'none'].map(sound => (
-                            <div 
-                              key={sound}
-                              className={`flex flex-col items-center justify-center p-2 border rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${newSettings.workCompleteSound === sound ? 'border-primary bg-primary/10' : 'border-border'}`}
-                              onClick={() => {
-                                handleSettingsChange('workCompleteSound', sound);
-                                if (sound !== 'none') playTestSound(sound);
-                              }}
-                            >
-                              {sound === 'bell' && <Bell className="h-6 w-6 mb-1" />}
-                              {sound === 'digital' && <Clock className="h-6 w-6 mb-1" />}
-                              {sound === 'calm' && <Coffee className="h-6 w-6 mb-1" />}
-                              {sound === 'alert' && <Zap className="h-6 w-6 mb-1" />}
-                              {sound === 'gong' && <Volume2 className="h-6 w-6 mb-1" />}
-                              {sound === 'none' && <VolumeX className="h-6 w-6 mb-1" />}
-                              <span className="text-xs capitalize">{sound}</span>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <Label className="mt-4">Break Complete Sound</Label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {['bell', 'digital', 'calm', 'alert', 'gong', 'none'].map(sound => (
-                            <div 
-                              key={sound}
-                              className={`flex flex-col items-center justify-center p-2 border rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${newSettings.breakCompleteSound === sound ? 'border-primary bg-primary/10' : 'border-border'}`}
-                              onClick={() => {
-                                handleSettingsChange('breakCompleteSound', sound);
-                                if (sound !== 'none') playTestSound(sound);
-                              }}
-                            >
-                              {sound === 'bell' && <Bell className="h-6 w-6 mb-1" />}
-                              {sound === 'digital' && <Clock className="h-6 w-6 mb-1" />}
-                              {sound === 'calm' && <Coffee className="h-6 w-6 mb-1" />}
-                              {sound === 'alert' && <Zap className="h-6 w-6 mb-1" />}
-                              {sound === 'gong' && <Volume2 className="h-6 w-6 mb-1" />}
-                              {sound === 'none' && <VolumeX className="h-6 w-6 mb-1" />}
-                              <span className="text-xs capitalize">{sound}</span>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <div className="text-xs text-muted-foreground mt-4">
-                          <p>Click on a sound to preview it.</p>
-                          <p>Note: Some browsers may block notifications and sounds until you interact with the page.</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="developer" className="space-y-4 py-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="debug-mode" className="flex items-center">
-                  <Bug className="w-4 h-4 mr-2" />
-                  Debug Mode
-                </Label>
-                <Switch 
-                  id="debug-mode" 
-                  checked={newSettings.debugMode}
-                  onCheckedChange={(checked) => handleSettingsChange('debugMode', checked)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="testing-mode" className="flex items-center">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Testing Mode
-                </Label>
-                <Switch 
-                  id="testing-mode" 
-                  checked={newSettings.testingMode}
-                  onCheckedChange={(checked) => handleSettingsChange('testingMode', checked)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Speed Factor: {newSettings.speedFactor}x</Label>
-                </div>
-                <Slider 
-                  min={1} 
-                  max={20} 
-                  step={1} 
-                  value={[newSettings.speedFactor]} 
-                  onValueChange={(value) => handleSettingsChange('speedFactor', value[0])} 
-                  disabled={!newSettings.testingMode}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Accelerates timer in testing mode (e.g., 5x = 5 seconds per second)
-                </p>
-              </div>
-              
-              {settings.debugMode && (
-                <div className="mt-4 border-t pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label>Event Log</Label>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={clearEventLog}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                  <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-md h-32 overflow-y-auto text-xs font-mono">
-                    {eventLog.length === 0 ? (
-                      <div className="text-muted-foreground text-center py-2">
-                        No events logged yet
-                      </div>
-                    ) : (
-                      eventLog.map((entry, i) => (
-                        <div key={i} className="mb-1">
-                          <span className="text-muted-foreground">{entry.time}</span>{' '}
-                          <span className="font-semibold">{entry.event}</span>
-                          {entry.data && (
-                            <span className="text-green-600 dark:text-green-400">
-                              {' '}{JSON.stringify(entry.data)}
-                            </span>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Check browser console for detailed logs
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-          
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setSettingsOpen(false)}>
-              Cancel
+          <WidgetConfigPanel
+            schema={pomodoroWidgetConfigSchema}
+            values={config}
+            onChange={handleConfigChange}
+          />
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setIsConfigOpen(false)}>
+              Close
             </Button>
-            <Button type="button" onClick={saveSettings}>
-              Save Changes
-            </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
       

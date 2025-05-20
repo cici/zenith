@@ -14,11 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Undo, Redo, Loader2, RotateCcw, Settings } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast"; // Import useToast
 import { DashboardSettingsPanel } from '@/components/DashboardSettingsPanel'; // Import the panel
-import TodoWidget from '@/components/widgets/TodoWidget'; // Import TodoWidget
-import PomodoroWidget from '@/components/widgets/PomodoroWidget'; // Import PomodoroWidget
-import { WeatherWidget } from '@/components/widgets/WeatherWidget'; // Import WeatherWidget
-import ExerciseWidget from '@/components/widgets/ExerciseWidget'; // Import ExerciseWidget
-import GuitarPracticeWidget from '@/components/widgets/GuitarPracticeWidget';
+import { widgets as widgetRegistry } from '@/data/widgets';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // --- Simple Debounce Utility ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,39 +40,39 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 // Default layout if nothing else is found
 const initialLayouts: GridLayouts = {
   lg: [
-    { i: 'a', x: 0, y: 0, w: 4, h: 2, static: false, minW: 2, minH: 1, maxW: 6, maxH: 4 },
-    { i: 'b', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 8, maxH: 4 },
-    { i: 'c', x: 8, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
-    { i: 'd', x: 0, y: 2, w: 12, h: 2, minW: 3, minH: 1, maxW: 12, maxH: 4 },
-    { i: 'e', x: 0, y: 4, w: 12, h: 2, minW: 3, minH: 1, maxW: 12, maxH: 4 },
+    { i: 'TodoWidget', x: 0, y: 0, w: 4, h: 2, static: false, minW: 2, minH: 1, maxW: 6, maxH: 12 },
+    { i: 'PomodoroWidget', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 8, maxH: 12 },
+    { i: 'WeatherWidget', x: 8, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 12 },
+    { i: 'ExerciseWidget', x: 0, y: 2, w: 12, h: 2, static: false, minW: 3, minH: 1, maxW: 12, maxH: 20 },
+    { i: 'PracticeGoalsWidget', x: 0, y: 4, w: 12, h: 2, minW: 3, minH: 1, maxW: 12, maxH: 12 },
   ],
   md: [
-    { i: 'a', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 4 },
-    { i: 'b', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 4 },
-    { i: 'c', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 4 },
-    { i: 'd', x: 0, y: 2, w: 9, h: 2, minW: 3, minH: 1, maxW: 9, maxH: 4 },
-    { i: 'e', x: 0, y: 4, w: 9, h: 2, minW: 3, minH: 1, maxW: 9, maxH: 4 },
+    { i: 'TodoWidget', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 12 },
+    { i: 'PomodoroWidget', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 12 },
+    { i: 'WeatherWidget', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 1, maxW: 5, maxH: 12 },
+    { i: 'ExerciseWidget', x: 0, y: 2, w: 9, h: 2, minW: 3, minH: 1, maxW: 9, maxH: 20 },
+    { i: 'PracticeGoalsWidget', x: 0, y: 4, w: 9, h: 2, minW: 3, minH: 1, maxW: 9, maxH: 12 },
   ],
   sm: [
-    { i: 'a', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
-    { i: 'b', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
-    { i: 'c', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
-    { i: 'd', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
-    { i: 'e', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 4 },
+    { i: 'TodoWidget', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 12 },
+    { i: 'PomodoroWidget', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 12 },
+    { i: 'WeatherWidget', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 12 },
+    { i: 'ExerciseWidget', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 20 },
+    { i: 'PracticeGoalsWidget', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 1, maxW: 6, maxH: 12 },
   ],
   xs: [
-    { i: 'a', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
-    { i: 'b', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
-    { i: 'c', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
-    { i: 'd', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
-    { i: 'e', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 4 },
+    { i: 'TodoWidget', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 12 },
+    { i: 'PomodoroWidget', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 12 },
+    { i: 'WeatherWidget', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 12 },
+    { i: 'ExerciseWidget', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 20 },
+    { i: 'PracticeGoalsWidget', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 1, maxW: 4, maxH: 12 },
   ],
   xxs: [
-    { i: 'a', x: 0, y: 0, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
-    { i: 'b', x: 0, y: 2, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
-    { i: 'c', x: 0, y: 4, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
-    { i: 'd', x: 0, y: 6, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
-    { i: 'e', x: 0, y: 8, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 3 },
+    { i: 'TodoWidget', x: 0, y: 0, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 12 },
+    { i: 'PomodoroWidget', x: 0, y: 2, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 12 },
+    { i: 'WeatherWidget', x: 0, y: 4, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 12 },
+    { i: 'ExerciseWidget', x: 0, y: 6, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 20 },
+    { i: 'PracticeGoalsWidget', x: 0, y: 8, w: 2, h: 2, minW: 1, minH: 1, maxW: 2, maxH: 12 },
   ],
 };
 
@@ -95,10 +92,93 @@ interface WidgetDefinition {
 }
 
 interface DashboardProps {
-  onAddWidgetClick: () => void;
+  onAddWidgetClick?: () => void;
+  widgetPositions: {[key: string]: string};
+  setWidgetPositions: React.Dispatch<React.SetStateAction<{[key: string]: string}>>;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
+// Helper to ensure safe widget sizes
+const safeWidgetSize = (w = 4, h = 4, minW = 2, minH = 2, maxW = 12, maxH = 8) => ({
+  w: Math.max(w, minW),
+  h: Math.max(h, minH),
+  minW,
+  minH,
+  maxW: Math.max(maxW, minW),
+  maxH: Math.max(maxH, minH),
+});
+
+// Utility to normalize a single layout item
+function normalizeLayoutItem(item) {
+  const minW = item.minW ?? 2;
+  const maxW = Math.max(item.maxW ?? 12, minW);
+  const w = Math.max(minW, Math.min(item.w ?? 4, maxW));
+
+  const minH = item.minH ?? 2;
+  const maxH = Math.max(item.maxH ?? 8, minH);
+  const h = Math.max(minH, Math.min(item.h ?? 4, maxH));
+
+  return {
+    ...item,
+    minW,
+    maxW,
+    w,
+    minH,
+    maxH,
+    h,
+  };
+}
+
+// Utility to normalize all layouts
+function normalizeLayouts(layouts) {
+  const result = {};
+  for (const key in layouts) {
+    result[key] = layouts[key].map(normalizeLayoutItem);
+  }
+  return result;
+}
+
+// Utility to check for invalid layout items (for debugging)
+function logInvalidLayouts(layouts) {
+  Object.entries(layouts).forEach(([breakpoint, items]) => {
+    if (Array.isArray(items)) {
+      items.forEach(item => {
+        if (item.minW > item.w || item.minW > item.maxW || item.minH > item.h || item.minH > item.maxH) {
+          console.warn(`Invalid layout item in breakpoint ${breakpoint}:`, item);
+        }
+      });
+    }
+  });
+}
+
+// Helper to generate a layout for a given breakpoint
+function generateLayout(widgetPositions, colCount) {
+  return Object.values(widgetPositions).map((widgetId, idx) =>
+    normalizeLayoutItem({
+      i: widgetId, // Use widget id as the layout id
+      x: (idx % colCount) * 2,
+      y: Math.floor(idx / colCount) * 2,
+      w: Math.min(4, colCount),
+      h: 4,
+      minW: 2,
+      minH: 2,
+      maxW: colCount,
+      maxH: widgetId === 'ExerciseWidget' ? 20 : 12, // Example: allow ExerciseWidget to be taller
+    })
+  );
+}
+
+// Helper to generate layouts for all breakpoints
+function generateAllLayouts(widgetPositions) {
+  return {
+    lg: generateLayout(widgetPositions, cols.lg),
+    md: generateLayout(widgetPositions, cols.md),
+    sm: generateLayout(widgetPositions, cols.sm),
+    xs: generateLayout(widgetPositions, cols.xs),
+    xxs: generateLayout(widgetPositions, cols.xxs),
+  };
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widgetPositions, setWidgetPositions }) => {
   const [layouts, setLayouts] = useState<GridLayouts>(initialLayouts); // Use renamed type
   const [history, setHistory] = useState<GridLayouts[]>([initialLayouts]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
@@ -106,13 +186,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
   const [isSaving, setIsSaving] = useState(false); // Add saving state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for settings panel
   const { toast } = useToast(); // Initialize toast
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null);
 
   // --- Placeholder Settings State & Handlers ---
   // TODO: Replace these with actual state management and logic
   const [user, setUser] = useState({ id: 'user123', displayName: 'Demo User', email: 'demo@example.com', timezone: 'America/New_York' }); // Example user
   const [currentWidgets, setCurrentWidgets] = useState([
-    { id: 'a', name: 'To-Do List', visible: true },
-    { id: 'b', name: 'Pomodoro Timer', visible: true },
+    { id: 'TodoWidget', name: 'To-Do List', visible: true },
+    { id: 'PomodoroWidget', name: 'Pomodoro Timer', visible: true },
     { id: 'c', name: 'Widget C (Error)', visible: true },
     { id: 'd', name: 'Widget D', visible: false },
   ]);
@@ -144,75 +225,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
     // If isPreview, maybe update temporary state or apply grid settings temporarily
   };
   // --- End Placeholder Settings State & Handlers ---
-
-  // Create a state to track which widget is in each position
-  const [widgetPositions, setWidgetPositions] = useState<{[key: string]: string}>({
-    'a': 'todo',
-    'b': 'pomodoro',
-    'c': 'weather',
-    'd': 'exercise',
-    'e': 'guitar',
-  });
-  
-  // Define the available widget types
-  const widgetDefinitions: {[key: string]: WidgetDefinition} = {
-    'todo': { 
-      id: 'todo', 
-      title: 'To-Do List', 
-      component: <TodoWidget id="a" />,
-      isLoading: false, 
-      error: undefined 
-    },
-    'pomodoro': { 
-      id: 'pomodoro', 
-      title: 'Pomodoro Timer', 
-      component: <PomodoroWidget id="b" />,
-      isLoading: false, 
-      error: undefined 
-    },
-    'weather': {
-      id: 'weather',
-      title: 'Weather',
-      component: <WeatherWidget />,
-      isLoading: false,
-      error: undefined
-    },
-    'exercise': {
-      id: 'exercise',
-      title: 'Exercise Tracking',
-      component: <ExerciseWidget id="exercise" title="Exercise Tracking" />,
-      isLoading: false,
-      error: undefined
-    },
-    'guitar': {
-      id: 'guitar',
-      title: 'Guitar Practice',
-      component: <GuitarPracticeWidget id="guitar" title="Guitar Practice" />, 
-      isLoading: false,
-      error: undefined
-    },
-    'loading': { 
-      id: 'loading', 
-      title: 'Widget B (Loading)', 
-      component: <div>Content for Widget B</div>,
-      isLoading: true, 
-      error: undefined 
-    },
-    'error': { 
-      id: 'error', 
-      title: 'Widget C (Error)', 
-      component: <div>Content for Widget C</div>,
-      isLoading: false, 
-      error: 'Failed to load data.' 
-    },
-    'empty': { 
-      id: 'empty', 
-      title: 'Widget D', 
-      component: <div>Content for Widget D</div>,
-      isLoading: false, 
-      error: undefined 
-    },
-  };
 
   // Load initial layout from DB or Local Storage on mount
   useEffect(() => {
@@ -248,8 +260,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
 
       // Set the final determined layout
       const layoutToUse = finalLayout || initialLayouts;
-      setLayouts(layoutToUse);
-      setHistory([layoutToUse]);
+      const normalized = normalizeLayouts(layoutToUse);
+      setLayouts(normalized);
+      setHistory([normalized]);
       setHistoryIndex(0);
       setIsLoaded(true);
       console.log("Dashboard layout loaded.");
@@ -264,14 +277,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
       setIsSaving(true); // Set saving state to true
       console.log('Debounced save triggered with layouts:', layoutToSave);
       try {
-        const success = await saveLayout(layoutToSave);
+        const normalized = normalizeLayouts(layoutToSave);
+        const success = await saveLayout(normalized);
         if (success) {
             console.log("Layout successfully saved to DB.");
-            saveLayoutToLocalStorage(layoutToSave); // Update local storage on successful save
+            saveLayoutToLocalStorage(normalized); // Update local storage on successful save
             toast({ title: "Layout Saved", description: "Dashboard layout saved successfully." });
         } else {
             console.warn("Failed to save layout to DB, saving to local storage only.");
-            saveLayoutToLocalStorage(layoutToSave);
+            saveLayoutToLocalStorage(normalized);
             toast({
                 title: "Offline Save",
                 description: "Could not save layout online. Saved locally.",
@@ -281,7 +295,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
       } catch (error) {
             console.error("Error during saveLayout call:", error);
             console.warn("Saving layout to local storage due to error.");
-            saveLayoutToLocalStorage(layoutToSave);
+            saveLayoutToLocalStorage(normalizeLayouts(layoutToSave));
              toast({
                 title: "Save Error",
                 description: "An error occurred while saving. Saved locally.",
@@ -295,14 +309,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
   );
 
   const handleLayoutChange = (currentLayout: Layout[], allLayouts: GridLayouts) => {
-    if (JSON.stringify(allLayouts) !== JSON.stringify(history[historyIndex])) {
+    const normalized = normalizeLayouts(allLayouts);
+    if (JSON.stringify(normalized) !== JSON.stringify(history[historyIndex])) {
         console.log('Layout changed externally, updating history...');
         const newHistory = history.slice(0, historyIndex + 1);
-        newHistory.push(allLayouts);
+        newHistory.push(normalized);
         setHistory(newHistory);
         setHistoryIndex(newHistory.length - 1);
-        setLayouts(allLayouts);
-        debouncedSaveLayout(allLayouts);
+        setLayouts(normalized);
+        debouncedSaveLayout(normalized);
     } else {
         console.log('Layout change originated from undo/redo, skipping history update.');
     }
@@ -316,8 +331,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
       console.log('Undoing layout change...');
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
-      setLayouts(history[newIndex]);
-      debouncedSaveLayout(history[newIndex]);
+      setLayouts(normalizeLayouts(history[newIndex]));
+      debouncedSaveLayout(normalizeLayouts(history[newIndex]));
     }
   }, [history, historyIndex, debouncedSaveLayout]);
 
@@ -326,8 +341,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
       console.log('Redoing layout change...');
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
-      setLayouts(history[newIndex]);
-      debouncedSaveLayout(history[newIndex]);
+      setLayouts(normalizeLayouts(history[newIndex]));
+      debouncedSaveLayout(normalizeLayouts(history[newIndex]));
     }
   }, [history, historyIndex, debouncedSaveLayout]);
 
@@ -335,10 +350,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
   const handleResetLayout = useCallback(() => {
     if (window.confirm('Are you sure you want to reset the layout to default? This cannot be undone easily.')) {
         console.log('Resetting layout to default...');
-        setLayouts(initialLayouts);
-        setHistory([initialLayouts]); // Reset history
+        const normalized = normalizeLayouts(initialLayouts);
+        setLayouts(normalized);
+        setHistory([normalized]); // Reset history
         setHistoryIndex(0);
-        debouncedSaveLayout(initialLayouts); // Save the reset state
+        debouncedSaveLayout(normalized); // Save the reset state
         toast({ title: "Layout Reset", description: "Dashboard layout reset to default." });
     }
   }, [debouncedSaveLayout, toast]);
@@ -349,19 +365,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
   // Create the list of widgets to render based on current positions
   const widgetsToRender = Object.keys(widgetPositions).map(position => {
     const widgetType = widgetPositions[position];
-    const widget = widgetDefinitions[widgetType];
-    
+    const meta = widgetRegistry.find(w => w.id === widgetType);
     return {
       id: position,
-      title: widget.title,
-      component: widget.component,
-      isLoading: widget.isLoading,
-      error: widget.error
+      title: meta?.name || '',
+      component: meta?.render({ id: position }) || <div>No widget found</div>,
     };
   });
 
+  const handleRemoveWidget = (position: string) => {
+    setPendingRemove(position);
+  };
+
+  const confirmRemoveWidget = () => {
+    if (pendingRemove) {
+      setWidgetPositions(prev => {
+        const newPositions = { ...prev };
+        delete newPositions[pendingRemove];
+        return newPositions;
+      });
+      // Remove the layout item for this widget from all breakpoints
+      setLayouts(prevLayouts => {
+        const newLayouts = { ...prevLayouts };
+        Object.keys(newLayouts).forEach(breakpoint => {
+          newLayouts[breakpoint] = newLayouts[breakpoint].filter(item => item.i !== pendingRemove);
+        });
+        return newLayouts;
+      });
+      setPendingRemove(null);
+    }
+  };
+
+  const cancelRemoveWidget = () => setPendingRemove(null);
+
+  // When widgetPositions changes (add/remove), regenerate all layouts
+  useEffect(() => {
+    if (isLoaded) {
+      const newLayouts = generateAllLayouts(widgetPositions);
+      setLayouts(normalizeLayouts(newLayouts));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Object.keys(widgetPositions).join(','), isLoaded]);
+
+  // Debug log for layouts
+  console.log('Current layouts:', layouts);
+
   return (
-    <div className="flex flex-col min-h-screen p-4">
+    <div className="flex-1 w-full h-full">
       <div className="flex justify-between items-center mb-4">
         <div className="flex space-x-2 items-center"> {/* Use items-center */}
           {/* Saving Indicator */}
@@ -390,14 +440,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
           </Button>
         </div>
       </div>
-      <div className="flex justify-end mb-4">
-        <Button
-          onClick={onAddWidgetClick}
-          className="gap-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-        >
-          + Add Widget
-        </Button>
-      </div>
       {isLoaded ? (
         <ResponsiveGridLayout
           className="layout"
@@ -412,17 +454,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
           isDraggable={true}
           isResizable={true}
         >
-          {widgetsToRender.map((widget) => (
-            <div key={widget.id} className="overflow-hidden">
-              <WidgetContainer
-                title={widget.title}
-                isLoading={widget.isLoading}
-                error={widget.error}
-              >
-                {widget.component}
-              </WidgetContainer>
-            </div>
-          ))}
+          {Object.entries(widgetPositions).map(([key, type]) => {
+            const meta = widgetRegistry.find(w => w.id === type);
+            if (!meta) return null;
+            return (
+              <div key={type} data-grid={layouts.lg.find(l => l.i === type)}>
+                <WidgetContainer
+                  onRemove={() => handleRemoveWidget(type)}
+                >
+                  {meta.render({ id: type })}
+                </WidgetContainer>
+              </div>
+            );
+          })}
         </ResponsiveGridLayout>
       ) : (
         <div className="flex justify-center items-center min-h-[300px]">
@@ -444,6 +488,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick }) => {
         currentGridSettings={gridSettings} // Pass placeholder grid settings
         onGridSettingsChange={handleGridSettingsChange} // Pass handler
       />
+
+      {/* Remove Confirmation Dialog */}
+      <Dialog open={!!pendingRemove} onOpenChange={cancelRemoveWidget}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Widget</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to remove this widget from your dashboard? This action cannot be undone.</p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={cancelRemoveWidget}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmRemoveWidget}>Remove</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

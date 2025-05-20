@@ -22,18 +22,23 @@ const ResizableWidget = ({
   id,
   title 
 }: ResizableWidgetProps) => {
+  // Support both Tailwind class and raw color (hex)
+  const isHexColor = typeof color === 'string' && color.startsWith('#');
   return (
     <ResizablePanelGroup 
       direction="vertical" 
-      className={cn("min-h-[450px] max-h-[2000px]", className)}
+      className={cn("min-h-[450px] max-h-[4000px]", className)}
     >
       <ResizablePanel 
         defaultSize={defaultSize}
         minSize={minSize}
-        maxSize={98}
+        maxSize={100}
         className="transition-all duration-200 ease-in-out"
       >
-        <Card className={cn("h-full shadow-lg overflow-visible", color)}>
+        <Card
+          className={cn("h-full shadow-lg overflow-visible", !isHexColor && color)}
+          style={isHexColor ? { backgroundColor: color } : undefined}
+        >
           {children}
         </Card>
       </ResizablePanel>

@@ -5,8 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Trash2, Edit, Plus, Bell, Clock } from "lucide-react";
+import { Loader2, Trash2, Edit, Plus, Bell, Clock, Settings } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { practiceGoalsConfigSchema } from "./practiceGoalsConfigSchema";
+import { WidgetConfigPanel } from "@/components/WidgetConfigPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // userId should be passed as a prop from auth context or parent component
 interface PracticeGoalsWidgetProps {
@@ -43,6 +46,18 @@ const PracticeGoalsWidget: React.FC<PracticeGoalsWidgetProps> = ({ userId }) => 
   const [reminderError, setReminderError] = useState<string | null>(null);
   const { toast } = useToast();
   const [shownReminders, setShownReminders] = useState<{[id: string]: number}>({});
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [config, setConfig] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem("practiceGoalsWidgetConfig") : null;
+    if (saved) return JSON.parse(saved);
+    const defaults: Record<string, any> = {};
+    practiceGoalsConfigSchema.fields.forEach(f => (defaults[f.name] = f.default));
+    return defaults;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("practiceGoalsWidgetConfig", JSON.stringify(config));
+  }, [config]);
 
   // Fetch goals
   useEffect(() => {
@@ -168,11 +183,35 @@ const PracticeGoalsWidget: React.FC<PracticeGoalsWidgetProps> = ({ userId }) => 
     if (editingReminderId === id) setEditingReminderId(null);
   };
 
+  const handleConfigChange = (name: string, value: any) => {
+    setConfig(prev => ({ ...prev, [name]: value }));
+  };
+
   return (
-    <Card className="h-full">
-      <CardHeader>
+    <Card className="h-full" style={{ backgroundColor: config.themeColor }}>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Practice Goals & Reminders</CardTitle>
+        <Button variant="ghost" size="icon" onClick={() => setIsConfigOpen(true)}>
+          <Settings className="h-5 w-5" />
+        </Button>
       </CardHeader>
+      <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Practice Goals Settings</DialogTitle>
+          </DialogHeader>
+          <WidgetConfigPanel
+            schema={practiceGoalsConfigSchema}
+            values={config}
+            onChange={handleConfigChange}
+          />
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setIsConfigOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="goals">Goals</TabsTrigger>

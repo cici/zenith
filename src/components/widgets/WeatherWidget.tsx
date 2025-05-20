@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as weatherApi from '../../services/weatherApi';
+import { weatherConfigSchema } from "./weatherConfigSchema";
+import { WidgetConfigPanel } from "@/components/WidgetConfigPanel";
+import { Settings, CloudSun } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const GEO_API = 'https://api.openweathermap.org/geo/1.0/direct';
 const GEO_REVERSE_API = 'https://api.openweathermap.org/geo/1.0/reverse';
@@ -46,6 +52,24 @@ export const WeatherWidget: React.FC = () => {
   const [current, setCurrent] = useState<any>(null);
   const [daily, setDaily] = useState<any[]>([]);
   const [hourly, setHourly] = useState<any[]>([]);
+
+  // Config state
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [config, setConfig] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem("weatherWidgetConfig") : null;
+    if (saved) return JSON.parse(saved);
+    const defaults: Record<string, any> = {};
+    weatherConfigSchema.fields.forEach(f => (defaults[f.name] = f.default));
+    return defaults;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("weatherWidgetConfig", JSON.stringify(config));
+  }, [config]);
+
+  const handleConfigChange = (name: string, value: any) => {
+    setConfig(prev => ({ ...prev, [name]: value }));
+  };
 
   // Geolocation detection
   const detectLocation = () => {
@@ -154,6 +178,33 @@ export const WeatherWidget: React.FC = () => {
     })();
   }, [location]);
 
+  useEffect(() => {
+    // If no location is set, use defaultCity from config
+    if (!location && config.defaultCity) {
+      setLoading(true);
+      axios
+        .get(GEO_API, {
+          params: { q: config.defaultCity, limit: 1, appid: API_KEY },
+        })
+        .then((res) => {
+          if (res.data && res.data.length > 0) {
+            const loc = {
+              name: res.data[0].name,
+              lat: res.data[0].lat,
+              lon: res.data[0].lon,
+              country: res.data[0].country,
+              state: res.data[0].state,
+            };
+            setLocation(loc);
+            saveLocation(loc);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.defaultCity]);
+
   const selectSuggestion = (loc: Location) => {
     setLocation(loc);
     setSuggestions([]);
@@ -171,119 +222,164 @@ export const WeatherWidget: React.FC = () => {
   };
 
   return (
-    <div className="weather-widget">
-      <h3>Weather Location</h3>
-      {error && <div className="error">{error}</div>}
-      <button onClick={detectLocation} disabled={loading}>
-        Use My Location
-      </button>
-      <div>
-        <input
-          type="text"
-          placeholder="Search city..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        {loading && (
-          <span style={{ marginLeft: 8 }} aria-label="Loading" role="status">🔄</span>
-        )}
-        {suggestions.length > 0 && (
-          <ul className="suggestions">
-            {suggestions.map((s, i) => (
-              <li key={i} onClick={() => selectSuggestion(s)}>
-                {s.name}, {s.state ? s.state + ', ' : ''}{s.country}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {location && (
-        <div className="current-location">
-          <div>
-            <strong>Selected:</strong> {location.name}, {location.state ? location.state + ', ' : ''}{location.country}
+    <Card>
+      <CardContent>
+        {/* Unified Header Bar */}
+        <div className="flex items-center justify-between w-full px-2 py-2 border-b mb-4">
+          <div className="flex items-center gap-2">
+            <CloudSun className="h-6 w-6 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-transparent bg-clip-text" />
+            <span className="font-poppins font-semibold text-lg">Weather</span>
           </div>
-          <button onClick={addFavorite}>Add to Favorites</button>
+          <Button variant="ghost" size="icon" aria-label="Settings" onClick={() => setIsConfigOpen(true)}>
+            <Settings className="h-5 w-5" />
+          </Button>
         </div>
-      )}
-      {favorites.length > 0 && (
-        <div className="favorites">
-          <strong>Favorites:</strong>
-          <ul>
+        <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Weather Widget Settings</DialogTitle>
+            </DialogHeader>
+            <WidgetConfigPanel
+              schema={weatherConfigSchema}
+              values={config}
+              onChange={handleConfigChange}
+            />
+            <div className="flex justify-end mt-4">
+              <Button onClick={() => setIsConfigOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {error && <div className="error">{error}</div>}
+        {/* Search & Location Controls */}
+        <Button onClick={detectLocation} disabled={loading} className="w-full mt-2 mb-2">
+          Use My Location
+        </Button>
+        <div className="relative w-full mb-2">
+          <input
+            type="text"
+            placeholder="Search city..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-0"
+          />
+          {loading && (
+            <span className="absolute right-3 top-2 text-gray-400 animate-spin" aria-label="Loading" role="status">🔄</span>
+          )}
+          {suggestions.length > 0 && (
+            <ul className="absolute z-10 bg-white rounded shadow w-full mt-1 text-left border">
+              {suggestions.map((s, i) => (
+                <li
+                  key={i}
+                  onClick={() => selectSuggestion(s)}
+                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                >
+                  {s.name}, {s.state ? s.state + ', ' : ''}{s.country}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {/* Current Location Display */}
+        {location && (
+          <div className="flex items-center gap-2 bg-blue-50 rounded px-3 py-1 mt-2 mb-2 w-fit">
+            <span className="font-medium text-sm">{location.name}{location.state ? `, ${location.state}` : ''}, {location.country}</span>
+            <Button variant="outline" size="sm" className="ml-2" onClick={addFavorite}>
+              Add to Favorites
+            </Button>
+          </div>
+        )}
+        {/* Favorites Display */}
+        {favorites.length > 0 && (
+          <div className="flex gap-2 mt-2 mb-2 overflow-x-auto">
             {favorites.map((f, i) => (
-              <li key={i}>
-                <span onClick={() => setLocation(f)} style={{ cursor: 'pointer' }}>
-                  {f.name}, {f.state ? f.state + ', ' : ''}{f.country}
-                </span>
-                <button onClick={() => removeFavorite(f)}>Remove</button>
-              </li>
+              <div
+                key={i}
+                className="flex items-center gap-2 bg-gray-100 rounded px-3 py-1 cursor-pointer hover:bg-blue-100"
+                onClick={() => setLocation(f)}
+              >
+                <span className="text-sm">{f.name}{f.state ? `, ${f.state}` : ''}, {f.country}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1"
+                  aria-label="Remove favorite"
+                  onClick={e => { e.stopPropagation(); removeFavorite(f); }}
+                >
+                  ×
+                </Button>
+              </div>
             ))}
-          </ul>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Weather Data UI */}
-      {location && (
-        <div className="weather-data">
-          <h4>Weather</h4>
-          {weatherLoading && <div>Loading weather...</div>}
-          {weatherError && <div className="error">{weatherError}</div>}
-          {current && (
-            <div className="current-weather">
-              <div>
-                <strong>{current.weather?.[0]?.main}</strong> - {current.weather?.[0]?.description}
+        {/* Weather Data UI */}
+        {location && (
+          <div className="weather-data">
+            <h4 className="font-semibold text-base mt-2 mb-2">Weather</h4>
+            {weatherLoading && <div>Loading weather...</div>}
+            {weatherError && <div className="error">{weatherError}</div>}
+            {current && (
+              <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center gap-2 mt-2 mb-2">
+                <div className="flex flex-col items-center">
+                  <img
+                    src={`https://openweathermap.org/img/wn/${current.weather?.[0]?.icon}@2x.png`}
+                    alt={current.weather?.[0]?.description}
+                    className="w-16 h-16"
+                  />
+                  <span className="text-4xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-transparent bg-clip-text">
+                    {Math.round(current.main?.temp)}°C
+                  </span>
+                </div>
+                <div className="text-sm text-muted-foreground text-center">
+                  <strong>{current.weather?.[0]?.main}</strong> - {current.weather?.[0]?.description}
+                </div>
+                <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                  <span>Humidity: {current.main?.humidity}%</span>
+                  <span>Wind: {current.wind?.speed} m/s</span>
+                </div>
               </div>
-              <div>
-                <img
-                  src={`https://openweathermap.org/img/wn/${current.weather?.[0]?.icon}@2x.png`}
-                  alt={current.weather?.[0]?.description}
-                  style={{ verticalAlign: 'middle' }}
-                />
-                <span style={{ fontSize: '2em' }}>{Math.round(current.main?.temp)}°C</span>
+            )}
+            {daily.length > 0 && (
+              <div className="daily-forecast">
+                <h5 className="font-medium text-sm mb-1">Daily Forecast</h5>
+                <div className="flex gap-3 overflow-x-auto py-2">
+                  {daily.map((d, i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-2 flex flex-col items-center min-w-[64px] text-xs font-medium">
+                      <div>{new Date(d.dt * 1000).toLocaleDateString(undefined, { weekday: 'short' })}</div>
+                      <img
+                        src={`https://openweathermap.org/img/wn/${d.weather?.[0]?.icon || '01d'}@2x.png`}
+                        alt={d.weather?.[0]?.description || ''}
+                        className="w-8 h-8"
+                      />
+                      <div>{Math.round(d.temp?.min)}° / {Math.round(d.temp?.max)}°</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div>Humidity: {current.main?.humidity}%</div>
-              <div>Wind: {current.wind?.speed} m/s</div>
-            </div>
-          )}
-          {daily.length > 0 && (
-            <div className="daily-forecast">
-              <h5>Daily Forecast</h5>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {daily.map((d, i) => (
-                  <div key={i} style={{ textAlign: 'center', minWidth: 60 }}>
-                    <div>{new Date(d.dt * 1000).toLocaleDateString(undefined, { weekday: 'short' })}</div>
-                    <img
-                      src={`https://openweathermap.org/img/wn/${d.weather?.[0]?.icon || '01d'}@2x.png`}
-                      alt={d.weather?.[0]?.description || ''}
-                      width={40}
-                      height={40}
-                    />
-                    <div>{Math.round(d.temp?.min)}° / {Math.round(d.temp?.max)}°</div>
-                  </div>
-                ))}
+            )}
+            {hourly.length > 0 && (
+              <div className="hourly-forecast">
+                <h5 className="font-medium text-sm mb-1">Hourly Forecast</h5>
+                <div className="flex gap-3 overflow-x-auto py-2">
+                  {hourly.map((h, i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-2 flex flex-col items-center min-w-[64px] text-xs font-medium">
+                      <div>{new Date(h.dt * 1000).getHours()}:00</div>
+                      <img
+                        src={`https://openweathermap.org/img/wn/${h.weather?.[0]?.icon || '01d'}@2x.png`}
+                        alt={h.weather?.[0]?.description || ''}
+                        className="w-8 h-8"
+                      />
+                      <div>{Math.round(h.main?.temp)}°</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          {hourly.length > 0 && (
-            <div className="hourly-forecast">
-              <h5>Hourly Forecast</h5>
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
-                {hourly.map((h, i) => (
-                  <div key={i} style={{ textAlign: 'center', minWidth: 60 }}>
-                    <div>{new Date(h.dt * 1000).getHours()}:00</div>
-                    <img
-                      src={`https://openweathermap.org/img/wn/${h.weather?.[0]?.icon || '01d'}@2x.png`}
-                      alt={h.weather?.[0]?.description || ''}
-                      width={40}
-                      height={40}
-                    />
-                    <div>{Math.round(h.main?.temp)}°</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }; 
