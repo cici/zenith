@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation, Link } from "react-router-dom";
+import { ROUTES } from "@/routes/routes";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -25,8 +26,8 @@ const DynamicBreadcrumbs: React.FC = () => {
     <Breadcrumb className="px-5 pt-4 pb-2">
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink asChild href="/" aria-label="Home">
-            <Link to="/">
+          <BreadcrumbLink asChild href={ROUTES.ROOT} aria-label="Home">
+            <Link to={ROUTES.ROOT}>
               <Home className="w-4 h-4 text-[#adb5bd]" />
             </Link>
           </BreadcrumbLink>

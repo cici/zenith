@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast"; // Import useToast
 import { DashboardSettingsPanel } from '@/components/DashboardSettingsPanel'; // Import the panel
 import { widgets as widgetRegistry } from '@/data/widgets';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import type { DashboardTemplate } from '@/services/TemplateService';
 
 // --- Simple Debounce Utility ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,6 +96,10 @@ interface DashboardProps {
   onAddWidgetClick?: () => void;
   widgetPositions: {[key: string]: string};
   setWidgetPositions: React.Dispatch<React.SetStateAction<{[key: string]: string}>>;
+  period?: string; // e.g., 'week', 'month', etc.
+  view?: string;   // e.g., 'summary', 'detailed', etc.
+  filter?: string; // e.g., 'overdue', 'completed', etc.
+  template?: DashboardTemplate;
 }
 
 // Helper to ensure safe widget sizes
@@ -178,7 +183,47 @@ function generateAllLayouts(widgetPositions) {
   };
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widgetPositions, setWidgetPositions }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widgetPositions, setWidgetPositions, period, view, filter, template }) => {
+  // --- Template-based customization enforcement ---
+  const customization = template?.customization || {};
+  const allowedWidgetTypes = customization.allowedWidgetTypes || null;
+  const allowWidgetAdd = customization.allowWidgetAdd !== false; // default true
+  const allowWidgetRemove = customization.allowWidgetRemove !== false; // default true
+  const allowWidgetMove = customization.allowWidgetMove !== false; // default true
+  const allowWidgetResize = customization.allowWidgetResize !== false; // default true
+  const allowLayoutChange = customization.allowLayoutChange !== false; // default true
+
+  // Enforce allowed widget types
+  const filteredWidgetPositions = allowedWidgetTypes
+    ? Object.fromEntries(Object.entries(widgetPositions).filter(([_, type]) => allowedWidgetTypes.includes(type)))
+    : widgetPositions;
+
+  // Warn if any widgets are filtered out
+  React.useEffect(() => {
+    if (allowedWidgetTypes) {
+      const removed = Object.entries(widgetPositions).filter(([_, type]) => !allowedWidgetTypes.includes(type));
+      if (removed.length > 0) {
+        setWidgetPositions(filteredWidgetPositions);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedWidgetTypes]);
+
+  // Layout constraints: use template layout if provided
+  const initialLayouts = React.useMemo(() => {
+    if (template?.layout) {
+      // Convert template.layout.items to react-grid-layout format for all breakpoints
+      const breakpoints = template.layout.breakpoints;
+      const items = template.layout.items;
+      const layouts: any = {};
+      for (const [bp, cols] of Object.entries(breakpoints)) {
+        layouts[bp] = items.map(item => ({ ...item }));
+      }
+      return layouts;
+    }
+    return generateAllLayouts(filteredWidgetPositions);
+  }, [template, filteredWidgetPositions]);
+
   const [layouts, setLayouts] = useState<GridLayouts>(initialLayouts); // Use renamed type
   const [history, setHistory] = useState<GridLayouts[]>([initialLayouts]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
@@ -363,8 +408,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
   const canRedo = historyIndex < history.length - 1;
 
   // Create the list of widgets to render based on current positions
-  const widgetsToRender = Object.keys(widgetPositions).map(position => {
-    const widgetType = widgetPositions[position];
+  const widgetsToRender = Object.keys(filteredWidgetPositions).map(position => {
+    const widgetType = filteredWidgetPositions[position];
     const meta = widgetRegistry.find(w => w.id === widgetType);
     return {
       id: position,
@@ -401,11 +446,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
   // When widgetPositions changes (add/remove), regenerate all layouts
   useEffect(() => {
     if (isLoaded) {
-      const newLayouts = generateAllLayouts(widgetPositions);
+      const newLayouts = generateAllLayouts(filteredWidgetPositions);
       setLayouts(normalizeLayouts(newLayouts));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [Object.keys(widgetPositions).join(','), isLoaded]);
+  }, [Object.keys(filteredWidgetPositions).join(','), isLoaded]);
 
   // Debug log for layouts
   console.log('Current layouts:', layouts);
@@ -451,16 +496,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
           containerPadding={[10, 10]}
           onLayoutChange={handleLayoutChange}
           draggableHandle=".widget-drag-handle"
-          isDraggable={true}
-          isResizable={true}
+          isDraggable={allowWidgetMove}
+          isResizable={allowWidgetResize}
         >
-          {Object.entries(widgetPositions).map(([key, type]) => {
+          {Object.entries(filteredWidgetPositions).map(([key, type]) => {
             const meta = widgetRegistry.find(w => w.id === type);
             if (!meta) return null;
             return (
               <div key={type} data-grid={layouts.lg.find(l => l.i === type)}>
                 <WidgetContainer
                   onRemove={() => handleRemoveWidget(type)}
+                  allowRemove={allowWidgetRemove}
                 >
                   {meta.render({ id: type })}
                 </WidgetContainer>

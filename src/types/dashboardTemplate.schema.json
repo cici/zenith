@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DashboardTemplate",
+  "type": "object",
+  "required": ["id", "name", "dashboardType", "layout", "widgets"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the dashboard template."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for the template."
+    },
+    "dashboardType": {
+      "type": "string",
+      "description": "Type/category of dashboard (e.g., productivity, wellness, analytics)."
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description of the template."
+    },
+    "layout": {
+      "type": "object",
+      "description": "Layout configuration for the dashboard, including grid positions and responsive breakpoints.",
+      "properties": {
+        "breakpoints": {
+          "type": "object",
+          "description": "Responsive breakpoints and their column counts.",
+          "patternProperties": {
+            "^[a-zA-Z0-9_]+$": { "type": "integer", "minimum": 1 }
+          },
+          "$comment": "Example: { \"lg\": 12, \"md\": 9, \"sm\": 6, \"xs\": 4, \"xxs\": 2 }"
+        },
+        "items": {
+          "type": "array",
+          "description": "Array of layout items for widgets.",
+          "items": {
+            "type": "object",
+            "required": ["i", "x", "y", "w", "h"],
+            "properties": {
+              "i": { "type": "string", "description": "Widget id (matches widget in widgets list)" },
+              "x": { "type": "integer", "description": "Grid column position" },
+              "y": { "type": "integer", "description": "Grid row position" },
+              "w": { "type": "integer", "description": "Width in grid units" },
+              "h": { "type": "integer", "description": "Height in grid units" },
+              "minW": { "type": "integer", "description": "Minimum width" },
+              "maxW": { "type": "integer", "description": "Maximum width" },
+              "minH": { "type": "integer", "description": "Minimum height" },
+              "maxH": { "type": "integer", "description": "Maximum height" },
+              "static": { "type": "boolean", "description": "If true, item cannot be moved or resized" }
+            }
+          }
+        }
+      },
+      "required": ["breakpoints", "items"]
+    },
+    "widgets": {
+      "type": "array",
+      "description": "List of widgets in the dashboard, with configuration and default settings.",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string", "description": "Unique widget instance id" },
+          "type": { "type": "string", "description": "Widget type (e.g., todo, weather)" },
+          "config": { "type": "object", "description": "Widget configuration and default settings.", "additionalProperties": true }
+        }
+      }
+    },
+    "customization": {
+      "type": "object",
+      "description": "User customization boundaries for this template.",
+      "properties": {
+        "allowWidgetAdd": { "type": "boolean", "description": "Can user add new widgets?" },
+        "allowWidgetRemove": { "type": "boolean", "description": "Can user remove widgets?" },
+        "allowWidgetMove": { "type": "boolean", "description": "Can user move widgets?" },
+        "allowWidgetResize": { "type": "boolean", "description": "Can user resize widgets?" },
+        "allowLayoutChange": { "type": "boolean", "description": "Can user change the layout?" },
+        "allowedWidgetTypes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of widget types user is allowed to add."
+        }
+      },
+      "required": []
+    }
+  }
+} 

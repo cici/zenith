@@ -9,9 +9,10 @@ import "@fontsource/poppins/600.css";
 
 interface HeaderProps {
   onAddWidgetClick?: () => void;
+  allowAddWidget?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ onAddWidgetClick }) => {
+const Header: React.FC<HeaderProps> = ({ onAddWidgetClick, allowAddWidget = true }) => {
   return (
     <header className="w-full flex items-center justify-between bg-white dark:bg-[#262e35] shadow-sm px-5 py-2.5 border-b border-[#e9ecef] dark:border-[#2c2c40] h-[60px] font-[Poppins]">
       {/* Left: Title */}
@@ -20,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ onAddWidgetClick }) => {
           Dashboard
           <span className="block h-1 w-12 mt-1 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 rounded-full" aria-hidden="true"></span>
         </h1>
-        {onAddWidgetClick && (
+        {onAddWidgetClick && allowAddWidget && (
           <Button size="sm" className="ml-2 font-[Poppins] text-[13.5px] font-medium tracking-wide flex items-center gap-1 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-white hover:opacity-90 transition" onClick={onAddWidgetClick} aria-label="Add Widget">
             <Plus className="w-4 h-4 mr-1" /> Add Widget
           </Button>

@@ -13,15 +13,21 @@ import { Button } from "@/components/ui/button";
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/600.css";
+import { ROUTES } from "@/routes/routes";
+import { NavLink } from "react-router-dom";
 
-const menuItems = [
-  { icon: Home, label: "Dashboard", active: true },
-  { icon: BarChart, label: "Analytics" },
-  { icon: Calendar, label: "Calendar" },
-  { icon: BookOpen, label: "Reading" },
-  { icon: Music, label: "Guitar" },
-  { icon: Utensils, label: "Meals" },
-  { icon: User, label: "Profile" },
+const dashboardMenuItems = [
+  { icon: Home, label: "Productivity", to: ROUTES.DASHBOARD.PRODUCTIVITY },
+  { icon: BarChart, label: "Analytics", to: ROUTES.DASHBOARD.ANALYTICS },
+  { icon: User, label: "Wellness", to: ROUTES.DASHBOARD.WELLNESS },
+];
+
+const otherMenuItems = [
+  { icon: Calendar, label: "Calendar", href: "/calendar" },
+  { icon: BookOpen, label: "Reading", href: "/reading" },
+  { icon: Music, label: "Guitar", href: "/guitar" },
+  { icon: Utensils, label: "Meals", href: "/meals" },
+  { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 export function MainSidebar() {
@@ -38,36 +44,36 @@ export function MainSidebar() {
       </div>
       <div className="flex-1">
         <ul className="space-y-1 px-2">
-          {menuItems.map((item) => (
+          {dashboardMenuItems.map((item) => (
             <li key={item.label}>
-              <a
-                href={item.label === "Dashboard" ? "/" : `/${item.label.toLowerCase()}`}
-                className={
-                  `group flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-400 ` +
-                  (item.active
-                    ? "bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-white shadow-md relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-gradient-to-b before:from-purple-500 before:via-blue-500 before:to-cyan-400 before:rounded-l-lg"
-                    : "hover:bg-[#343a40] hover:text-white")
+              <NavLink
+                to={item.to}
+                className={({ isActive }) =>
+                  `group flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-400 font-[Poppins] text-[13.5px] font-medium tracking-wide ` +
+                  (isActive
+                    ? "bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-white shadow-md font-bold"
+                    : "hover:bg-[#343a40] hover:text-white text-[#adb5bd]")
                 }
-                aria-current={item.active ? "page" : undefined}
                 tabIndex={0}
               >
-                <item.icon size={18} className={item.active ? "text-white" : "text-[#adb5bd] group-hover:text-white transition-colors duration-200"} />
-                <span className="text-[13.5px] font-medium font-[Poppins] tracking-wide">
-                  {item.label}
-                </span>
+                <item.icon size={18} className="mr-2" />
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
+          {otherMenuItems.map((item) => (
+            <li key={item.label}>
+              <a
+                href={item.href}
+                className="group flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-400 text-[13.5px] font-medium font-[Poppins] tracking-wide hover:bg-[#343a40] hover:text-white text-[#adb5bd]"
+                tabIndex={0}
+              >
+                <item.icon size={18} className="mr-2" />
+                {item.label}
               </a>
             </li>
           ))}
         </ul>
-      </div>
-      <div className="px-3 py-4 mt-auto">
-        <button
-          className="w-full flex items-center gap-2 text-[#adb5bd] hover:text-white hover:bg-[#343a40] rounded-lg px-4 py-2 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-cyan-400 outline-none"
-          aria-label="Settings"
-        >
-          <Settings size={18} />
-          <span className="text-[13.5px] font-medium font-[Poppins] tracking-wide">Settings</span>
-        </button>
       </div>
     </nav>
   );

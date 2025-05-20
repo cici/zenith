@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout from '@/layouts/AuthLayout';
+import { ROUTES } from '@/routes/routes';
 
 export default function LoginForm() {
   const { signIn, signUp, loading, error, user } = useAuth();
@@ -13,7 +14,7 @@ export default function LoginForm() {
 
   useEffect(() => {
     if (success && mode === 'login') {
-      navigate('/index');
+      navigate(ROUTES.INDEX);
     }
   }, [success, mode, navigate]);
 

@@ -170,4 +170,28 @@ export async function initializeUserProfile(userId: string, email?: string): Pro
 export async function setupProfileTrigger(): Promise<void> {
   // This would typically be done in database migrations
   console.log('Profile trigger should be set up in database migrations');
+}
+
+/**
+ * Fetch the current user's subscription tier
+ */
+export async function getUserSubscriptionTier(userId: string): Promise<string | null> {
+  try {
+    if (!userId) throw new Error('User ID is required');
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('tier')
+      .eq('user_id', userId)
+      .order('expires_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (error) {
+      console.error('Error fetching subscription tier:', error);
+      return null;
+    }
+    return data?.tier || null;
+  } catch (error) {
+    console.error('Unexpected error in getUserSubscriptionTier:', error);
+    return null;
+  }
 } 

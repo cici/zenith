@@ -15,6 +15,9 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import { TodoProvider } from '@/contexts/TodoContext';
 import { TimerProvider } from '@/contexts/TimerContext';
 import { defaultThemeConfig } from "@/types/theme";
+import { Suspense, lazy } from "react";
+import DashboardLoader from "@/components/ui/DashboardLoader";
+import { ROUTES } from "@/routes/routes";
 
 const queryClient = new QueryClient();
 
@@ -23,18 +26,22 @@ const AppContent = () => {
   const { user } = useAuth();
   const userId = user?.id || 'demo-user';
 
+  const ProductivityDashboard = lazy(() => import("@/pages/ProductivityDashboard"));
+  const WellnessDashboard = lazy(() => import("@/pages/WellnessDashboard"));
+  const AnalyticsDashboard = lazy(() => import("@/pages/AnalyticsDashboard"));
+
   return (
     <TimerProvider>
       <TodoProvider userId={userId}>
         <BrowserRouter>
           <Routes>
             {/* Temporarily redirect root to /index to bypass login (Task #11) */}
-            <Route path="/" element={<Navigate to="/index" replace />} />
+            <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.INDEX} replace />} />
             {/* Original Login Route - commented out for now
-            <Route path="/" element={<LoginForm />} />
+            <Route path={ROUTES.ROOT} element={<LoginForm />} />
             */}
             <Route
-              path="/index"
+              path={ROUTES.INDEX}
               element={
                 <ProtectedRoute>
                   <Index />
@@ -42,7 +49,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/profile"
+              path={ROUTES.PROFILE}
               element={
                 <ProtectedRoute>
                   <ProfilePage />
@@ -50,7 +57,7 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/theme"
+              path={ROUTES.THEME}
               element={
                 <ProtectedRoute>
                   <ThemeManagerPage />
@@ -58,15 +65,45 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/account"
+              path={ROUTES.ACCOUNT}
               element={
                 <ProtectedRoute>
                   <AccountManagerPage />
                 </ProtectedRoute>
               }
             />
+            <Route
+              path={ROUTES.DASHBOARD.PRODUCTIVITY}
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<DashboardLoader />}>
+                    <ProductivityDashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.DASHBOARD.WELLNESS}
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<DashboardLoader />}>
+                    <WellnessDashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.DASHBOARD.ANALYTICS}
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<DashboardLoader />}>
+                    <AnalyticsDashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path={ROUTES.NOT_FOUND} element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TodoProvider>

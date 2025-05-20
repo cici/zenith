@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getProfileById } from '@/services/profileService';
 import { WeatherWidget } from '@/components/widgets/WeatherWidget';
+import { ROUTES } from '@/routes/routes';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -47,7 +48,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/');
+      navigate(ROUTES.ROOT);
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -85,25 +86,25 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link to="/profile" className="cursor-pointer">
+                        <Link to={ROUTES.PROFILE} className="cursor-pointer">
                           <User className="mr-2 h-4 w-4" />
                           <span>Profile</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/account" className="cursor-pointer">
+                        <Link to={ROUTES.ACCOUNT} className="cursor-pointer">
                           <Shield className="mr-2 h-4 w-4" />
                           <span>Account Security</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/theme" className="cursor-pointer">
+                        <Link to={ROUTES.THEME} className="cursor-pointer">
                           <Palette className="mr-2 h-4 w-4" />
                           <span>Theme Settings</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/profile" className="cursor-pointer">
+                        <Link to={ROUTES.PROFILE} className="cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
                           <span>Settings</span>
                         </Link>

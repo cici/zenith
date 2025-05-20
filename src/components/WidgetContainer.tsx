@@ -13,14 +13,28 @@ interface WidgetContainerProps {
   config?: Record<string, any>; // Optional configuration object for widget-specific settings
   onRemove?: () => void;       // Add this prop
   onSettings?: () => void;     // Add this prop
+  allowRemove?: boolean;       // New: controls visibility of remove button
   // Add other common props like isLoading, error, etc., as needed later
 }
 
-const WidgetContainer: React.FC<WidgetContainerProps> = ({ children, isLoading = false, error }) => {
+const WidgetContainer: React.FC<WidgetContainerProps> = ({ children, isLoading = false, error, onRemove, allowRemove = true }) => {
   return (
     <article
       className="widget-container bg-white dark:bg-[#232a36] rounded-2xl shadow-lg text-card-foreground overflow-hidden h-full flex flex-col font-[Poppins] transition-all duration-200"
     >
+      {/* Header with Remove Button */}
+      <div className="flex justify-end p-2">
+        {allowRemove && onRemove && (
+          <button
+            onClick={onRemove}
+            aria-label="Remove widget"
+            className="text-gray-400 hover:text-red-500 focus:outline-none"
+            tabIndex={0}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
+      </div>
       {/* Body (now includes everything, including header/controls, passed as children) */}
       <div className="p-4 flex-grow overflow-auto">
         {error ? (
