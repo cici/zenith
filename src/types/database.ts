@@ -33,6 +33,27 @@ export interface Profile {
 
 export type ProfileUpdate = Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'email'>>;
 
+export interface Widget {
+  id: string;
+  user_id: string;
+  dashboard_id: string; // Foreign key referencing the dashboard this widget belongs to (now string)
+  type: string;
+  config?: Record<string, any>;
+  position?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface Dashboard {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  layoutConfiguration: Record<string, any>;
+  widgets: Widget[];
+}
+
 export interface Database {
   public: {
     Tables: {

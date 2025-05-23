@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Dashboard from '@/components/Dashboard';
-import { widgets } from '@/data/widgets';
-import MainLayout from '@/layouts/MainLayout';
+import AddWidgetDialog from '@/components/AddWidgetDialog';
+import { MainSidebar } from '@/components/Sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import Header from '@/components/Header';
 import DashboardTabs from '@/components/DashboardTabs';
-import templateService from '@/services/TemplateService';
+import { useDashboardStore } from '@/store/dashboardStore';
+import { useToast } from '@/components/ui/use-toast';
 
 // Example usage: /dashboard/wellness?filter=active&view=summary
 const wellnessWidgetIds = ['exercise', 'guitar', 'weather'];
@@ -16,68 +19,88 @@ const WellnessDashboard: React.FC = () => {
   const filter = searchParams.get('filter') || '';
   const view = searchParams.get('view') || 'default';
 
-  // Error state for template loading
-  const [templateError, setTemplateError] = useState<string | null>(null);
+  // Zustand dashboard store
+  const {
+    dashboards,
+    activeDashboardId,
+    setActiveDashboard,
+    addWidgetToDashboard,
+  } = useDashboardStore();
+  const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
+  const { toast } = useToast();
 
-  let template;
-  try {
-    template = templateService.getTemplateById(WELLNESS_TEMPLATE_ID);
-  } catch (err: any) {
-    template = null;
-    setTimeout(() => setTemplateError(err.message || 'Failed to load dashboard template.'), 0);
-  }
+  // Get the active dashboard and its widgets
+  const activeDashboard = dashboards.find(d => d.id === activeDashboardId) || dashboards[0];
+  const widgets = activeDashboard?.widgets || [];
 
-  // Customization state: widget positions (id -> type)
-  const [widgetPositions, setWidgetPositions] = useState<{ [key: string]: string }>(
-    template ? Object.fromEntries(template.widgets.map(w => [w.id, w.type])) : {}
-  );
-
-  // Reset to template defaults
-  const handleReset = () => {
-    if (template) {
-      setWidgetPositions(Object.fromEntries(template.widgets.map(w => [w.id, w.type])));
+  // Handler for adding a widget
+  const handleAddWidget = (type: string) => {
+    if (!activeDashboard) return;
+    if (widgets.some(w => w.type === type)) {
+      toast({
+        title: 'Widget already added',
+        description: 'You cannot add the same widget more than once.',
+        variant: 'destructive',
+      });
+      setIsAddWidgetOpen(false);
+      return;
     }
+    // Create a new widget object (customize as needed)
+    const newWidget = {
+      id: Date.now().toString(),
+      user_id: 'demo-user',
+      dashboard_id: activeDashboard.id,
+      type,
+      config: {},
+      position: widgets.length + 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    addWidgetToDashboard(activeDashboard.id, newWidget);
+    setIsAddWidgetOpen(false);
   };
 
-  // Optionally filter widgets if Dashboard expects a registry
-  // const wellnessWidgets = widgets.filter(w => wellnessWidgetIds.includes(w.id));
-
-  if (templateError) {
+  if (!activeDashboard) {
     return (
-      <MainLayout>
-        <DashboardTabs />
-        <div className="flex flex-col items-center justify-center min-h-[300px] text-red-600 font-semibold">
-          <span>Error: {templateError}</span>
+      <SidebarProvider>
+        <div className="min-h-screen h-full w-full flex bg-muted">
+          <MainSidebar />
+          <div className="flex-1 flex flex-col w-full h-full">
+            <Header onAddWidgetClick={() => setIsAddWidgetOpen(true)} />
+            <DashboardTabs />
+            <div className="flex flex-col items-center justify-center min-h-[300px] text-red-600 font-semibold">
+              <span>No active dashboard found.</span>
+            </div>
+          </div>
         </div>
-      </MainLayout>
+      </SidebarProvider>
     );
   }
 
-  if (!template) {
-    return null; // Or a loading spinner
-  }
-
   return (
-    <MainLayout>
-      <DashboardTabs />
-      <div className="flex justify-end mb-2">
-        <button
-          className="px-3 py-1 rounded bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 text-white font-[Poppins] text-sm shadow hover:opacity-90"
-          onClick={handleReset}
-        >
-          Reset to Template Defaults
-        </button>
+    <SidebarProvider>
+      <div className="min-h-screen h-full w-full flex bg-muted">
+        <MainSidebar />
+        <div className="flex-1 flex flex-col w-full h-full">
+          <Header onAddWidgetClick={() => setIsAddWidgetOpen(true)} />
+          <DashboardTabs />
+          <main className="flex-1 flex flex-col w-full h-full p-6">
+            <Dashboard
+              dashboardId={activeDashboard.id}
+              widgets={widgets}
+              filter={filter}
+              view={view}
+            />
+            <AddWidgetDialog
+              open={isAddWidgetOpen}
+              onOpenChange={setIsAddWidgetOpen}
+              onAddWidget={handleAddWidget}
+              dashboardId={activeDashboard.id}
+            />
+          </main>
+        </div>
       </div>
-      <Dashboard
-        template={template}
-        widgetPositions={widgetPositions}
-        setWidgetPositions={setWidgetPositions}
-        filter={filter}
-        view={view}
-        // widgets={wellnessWidgets} // If Dashboard supports a widgets prop
-        // layoutName="wellness" // If Dashboard supports a layoutName prop
-      />
-    </MainLayout>
+    </SidebarProvider>
   );
 };
 

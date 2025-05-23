@@ -10,11 +10,13 @@ BEGIN
     type text NOT NULL,
     config jsonb,
     position int,
+    dashboard_id BIGINT REFERENCES dashboard_layouts(id) ON DELETE CASCADE,
     created_at timestamp with time zone DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_widgets_user_id ON widgets(user_id);
   COMMENT ON TABLE widgets IS 'Stores widget configuration for each user.';
   COMMENT ON COLUMN widgets.type IS 'Widget type (todo, pomodoro, etc.)';
   COMMENT ON COLUMN widgets.config IS 'Widget-specific configuration in JSON.';
+  COMMENT ON COLUMN widgets.dashboard_id IS 'Foreign key referencing the dashboard this widget belongs to.';
 END;
 $$; 

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { validateNewTodo, validateTodoUpdate } from '@/utils/todoValidation';
+import { Dashboard, Widget } from '@/types/database';
 
 export interface Todo {
   id: string;
@@ -15,6 +16,9 @@ export interface Todo {
 
 // Local storage key for todos
 const LOCAL_STORAGE_KEY = 'zenith_todos';
+
+// Local storage key for widgets
+const LOCAL_WIDGETS_KEY = 'zenith_widgets';
 
 // Helper function to check if we should use local storage
 async function shouldUseLocalStorage(): Promise<boolean> {
@@ -140,6 +144,67 @@ async function deleteLocalTodo(id: string): Promise<void> {
   }
 }
 
+// Local storage helpers for widgets
+async function getLocalWidgets(dashboardId: string): Promise<Widget[]> {
+  try {
+    const stored = localStorage.getItem(LOCAL_WIDGETS_KEY);
+    if (!stored) return [];
+    const all = JSON.parse(stored) as Widget[];
+    return all.filter(w => w.dashboard_id === dashboardId);
+  } catch (e) {
+    console.error('Error getting widgets from local storage:', e);
+    return [];
+  }
+}
+
+async function addLocalWidget(widget: Omit<Widget, 'id' | 'created_at'> & { dashboard_id: string }): Promise<Widget> {
+  try {
+    const stored = localStorage.getItem(LOCAL_WIDGETS_KEY);
+    const all = stored ? JSON.parse(stored) as Widget[] : [];
+    const newWidget: Widget = {
+      ...widget,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+    };
+    all.push(newWidget);
+    localStorage.setItem(LOCAL_WIDGETS_KEY, JSON.stringify(all));
+    return newWidget;
+  } catch (e) {
+    console.error('Error adding widget to local storage:', e);
+    throw new Error('Failed to add widget to local storage');
+  }
+}
+
+async function updateLocalWidget(id: string, dashboardId: string, updates: Partial<Widget>): Promise<Widget> {
+  try {
+    const stored = localStorage.getItem(LOCAL_WIDGETS_KEY);
+    if (!stored) throw new Error('Widget not found');
+    const all = JSON.parse(stored) as Widget[];
+    const idx = all.findIndex(w => w.id === id && w.dashboard_id === dashboardId);
+    if (idx === -1) throw new Error('Widget not found');
+    const updated = { ...all[idx], ...updates };
+    all[idx] = updated;
+    localStorage.setItem(LOCAL_WIDGETS_KEY, JSON.stringify(all));
+    return updated;
+  } catch (e) {
+    console.error('Error updating widget in local storage:', e);
+    throw new Error('Failed to update widget in local storage');
+  }
+}
+
+async function deleteLocalWidget(id: string, dashboardId: string): Promise<void> {
+  try {
+    const stored = localStorage.getItem(LOCAL_WIDGETS_KEY);
+    if (!stored) return;
+    const all = JSON.parse(stored) as Widget[];
+    const updated = all.filter(w => !(w.id === id && w.dashboard_id === dashboardId));
+    localStorage.setItem(LOCAL_WIDGETS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Error deleting widget from local storage:', e);
+    throw new Error('Failed to delete widget from local storage');
+  }
+}
+
 export async function getTodos(userId: string): Promise<Todo[]> {
   // Check if we should use local storage
   if (await shouldUseLocalStorage()) {
@@ -233,6 +298,113 @@ export async function deleteTodo(id: string): Promise<void> {
 
   const { error } = await supabase
     .from('todos')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// Get all widgets for a specific dashboard
+export async function getWidgets(dashboardId: string): Promise<Widget[]> {
+  const { data, error } = await supabase
+    .from('widgets')
+    .select('*')
+    .eq('dashboard_id', dashboardId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+// Get a specific widget by ID
+export async function getWidgetById(id: string): Promise<Widget | null> {
+  const { data, error } = await supabase
+    .from('widgets')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Create a new widget
+export async function createWidget(widget: Partial<Widget>): Promise<Widget> {
+  const { data, error } = await supabase
+    .from('widgets')
+    .insert([widget])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Update a widget
+export async function updateWidget(id: string, updates: Partial<Widget>): Promise<Widget> {
+  const { data, error } = await supabase
+    .from('widgets')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Delete a widget
+export async function deleteWidget(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('widgets')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// Get all dashboards for the current user
+export async function getDashboards(): Promise<Dashboard[]> {
+  const { data, error } = await supabase
+    .from('dashboards')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+// Get a specific dashboard by ID
+export async function getDashboardById(id: string): Promise<Dashboard | null> {
+  const { data, error } = await supabase
+    .from('dashboards')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Create a new dashboard
+export async function createDashboard(dashboard: Partial<Dashboard>): Promise<Dashboard> {
+  const { data, error } = await supabase
+    .from('dashboards')
+    .insert([dashboard])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Update a dashboard
+export async function updateDashboard(id: string, updates: Partial<Dashboard>): Promise<Dashboard> {
+  const { data, error } = await supabase
+    .from('dashboards')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Delete a dashboard
+export async function deleteDashboard(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('dashboards')
     .delete()
     .eq('id', id);
   if (error) throw error;

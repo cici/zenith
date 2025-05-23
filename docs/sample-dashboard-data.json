@@ -1,0 +1,68 @@
+[
+  {
+    "id": "dashboard-123",
+    "user_id": "user-456",
+    "name": "Productivity Dashboard",
+    "created_at": "2024-06-01T12:00:00Z",
+    "updated_at": "2024-06-02T09:30:00Z",
+    "layout_configuration": {
+      "lg": [
+        { "i": "todo", "x": 0, "y": 0, "w": 6, "h": 6 },
+        { "i": "pomodoro", "x": 6, "y": 0, "w": 6, "h": 3 }
+      ]
+    },
+    "widgets": [
+      {
+        "id": "widget-1",
+        "dashboard_id": "dashboard-123",
+        "type": "todo",
+        "config": { "defaultView": "all" },
+        "position": 1,
+        "created_at": "2024-06-01T12:01:00Z",
+        "updated_at": "2024-06-01T12:01:00Z"
+      },
+      {
+        "id": "widget-2",
+        "dashboard_id": "dashboard-123",
+        "type": "pomodoro",
+        "config": { "defaultDuration": 25 },
+        "position": 2,
+        "created_at": "2024-06-01T12:02:00Z",
+        "updated_at": "2024-06-01T12:02:00Z"
+      }
+    ]
+  },
+  {
+    "id": "dashboard-456",
+    "user_id": "user-789",
+    "name": "Wellness Dashboard",
+    "created_at": "2024-06-03T08:00:00Z",
+    "updated_at": "2024-06-03T08:30:00Z",
+    "layout_configuration": {
+      "lg": [
+        { "i": "exercise", "x": 0, "y": 0, "w": 6, "h": 12 },
+        { "i": "weather", "x": 6, "y": 3, "w": 6, "h": 3 }
+      ]
+    },
+    "widgets": [
+      {
+        "id": "widget-3",
+        "dashboard_id": "dashboard-456",
+        "type": "exercise",
+        "config": { "goal": "30min" },
+        "position": 1,
+        "created_at": "2024-06-03T08:01:00Z",
+        "updated_at": "2024-06-03T08:01:00Z"
+      },
+      {
+        "id": "widget-4",
+        "dashboard_id": "dashboard-456",
+        "type": "weather",
+        "config": { "location": "auto" },
+        "position": 2,
+        "created_at": "2024-06-03T08:02:00Z",
+        "updated_at": "2024-06-03T08:02:00Z"
+      }
+    ]
+  }
+] 

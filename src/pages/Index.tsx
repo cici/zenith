@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Dashboard from '@/components/Dashboard';
 import AddWidgetDialog from '@/components/AddWidgetDialog';
 import { MainSidebar } from '@/components/Sidebar';
@@ -15,24 +15,27 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Home } from "lucide-react";
 import DynamicBreadcrumbs from "@/components/ui/DynamicBreadcrumbs";
+import { useDashboardStore } from '@/store/dashboardStore';
 
 const Index: React.FC = () => {
+  const {
+    dashboards,
+    activeDashboardId,
+    setActiveDashboard,
+    addWidgetToDashboard,
+    createDashboard,
+  } = useDashboardStore();
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
-  const [widgetPositions, setWidgetPositions] = useState<{[key: string]: string}>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('widgetPositions') : null;
-    return saved ? JSON.parse(saved) : { '1': 'todo', '2': 'pomodoro', '3': 'weather', '4': 'exercise' };
-  });
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('widgetPositions', JSON.stringify(widgetPositions));
-    }
-  }, [widgetPositions]);
+  // Get the active dashboard and its widgets
+  const activeDashboard = dashboards.find(d => d.id === activeDashboardId) || dashboards[0];
+  const widgets = activeDashboard?.widgets || [];
 
+  // Handler for adding a widget
   const handleAddWidget = (type: string) => {
-    // Prevent duplicate widgets
-    if (Object.values(widgetPositions).includes(type)) {
+    if (!activeDashboard) return;
+    if (widgets.some(w => w.type === type)) {
       toast({
         title: "Widget already added",
         description: "You cannot add the same widget more than once.",
@@ -41,10 +44,31 @@ const Index: React.FC = () => {
       setIsAddWidgetOpen(false);
       return;
     }
-    // Find the next available position key
-    const nextId = (Math.max(0, ...Object.keys(widgetPositions).map(Number)) + 1).toString();
-    setWidgetPositions(prev => ({ ...prev, [nextId]: type }));
+    // Create a new widget object (customize as needed)
+    const newWidget = {
+      id: Date.now().toString(),
+      user_id: 'demo-user',
+      dashboard_id: activeDashboard.id,
+      type,
+      config: {},
+      position: widgets.length + 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    addWidgetToDashboard(activeDashboard.id, newWidget);
     setIsAddWidgetOpen(false);
+  };
+
+  // Handler for dashboard selection
+  const handleDashboardSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setActiveDashboard(e.target.value);
+  };
+
+  // Handler for creating a new dashboard
+  const handleCreateDashboard = async () => {
+    await createDashboard({ name: `Dashboard ${dashboards.length + 1}` });
+    // Optionally set as active
+    setActiveDashboard(dashboards[dashboards.length - 1]?.id);
   };
 
   return (
@@ -54,9 +78,25 @@ const Index: React.FC = () => {
         <div className="flex-1 flex flex-col w-full h-full">
           <Header onAddWidgetClick={() => setIsAddWidgetOpen(true)} />
           <DynamicBreadcrumbs />
+          <div className="flex items-center gap-4 p-4">
+            <select value={activeDashboard?.id || ''} onChange={handleDashboardSelect} className="border rounded px-2 py-1">
+              {dashboards.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+            <button onClick={handleCreateDashboard} className="border rounded px-2 py-1">+ New Dashboard</button>
+          </div>
           <main className="flex-1 flex flex-col w-full h-full p-6">
-            <Dashboard widgetPositions={widgetPositions} setWidgetPositions={setWidgetPositions} />
-            <AddWidgetDialog open={isAddWidgetOpen} onOpenChange={setIsAddWidgetOpen} onAddWidget={handleAddWidget} />
+            {activeDashboard && (
+              <Dashboard
+                dashboardId={activeDashboard.id}
+                widgets={widgets}
+                // Pass other props as needed
+              />
+            )}
+            {activeDashboard && (
+              <AddWidgetDialog open={isAddWidgetOpen} onOpenChange={setIsAddWidgetOpen} onAddWidget={handleAddWidget} dashboardId={activeDashboard.id} />
+            )}
           </main>
         </div>
       </div>

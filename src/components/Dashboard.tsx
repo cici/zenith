@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Responsive, WidthProvider, Layouts, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import WidgetContainer from '@/components/WidgetContainer';
-import { saveLayout, getLayout } from '@/services/dashboardLayoutService';
+import { saveLayout, getLayout, getLayoutWithMeta } from '@/services/dashboardLayoutService';
 import {
   isValidLayoutsObject,
   Layouts as GridLayouts, // Rename imported Layouts to avoid conflict
@@ -17,6 +17,15 @@ import { DashboardSettingsPanel } from '@/components/DashboardSettingsPanel'; //
 import { widgets as widgetRegistry } from '@/data/widgets';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { DashboardTemplate } from '@/services/TemplateService';
+import { getWidgets, createWidget, deleteWidget } from '@/services/database';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import {
+  getSyncQueue,
+  processSyncQueue,
+  SyncQueueItem,
+  clearSyncQueue
+} from '@/utils/syncQueue';
+import type { Widget } from '@/types/database';
 
 // --- Simple Debounce Utility ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,9 +102,9 @@ interface WidgetDefinition {
 }
 
 interface DashboardProps {
+  dashboardId: string;
   onAddWidgetClick?: () => void;
-  widgetPositions: {[key: string]: string};
-  setWidgetPositions: React.Dispatch<React.SetStateAction<{[key: string]: string}>>;
+  widgets: Widget[]; // Only use widgets from Zustand
   period?: string; // e.g., 'week', 'month', etc.
   view?: string;   // e.g., 'summary', 'detailed', etc.
   filter?: string; // e.g., 'overdue', 'completed', etc.
@@ -183,7 +192,15 @@ function generateAllLayouts(widgetPositions) {
   };
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widgetPositions, setWidgetPositions, period, view, filter, template }) => {
+const Dashboard: React.FC<DashboardProps> = ({
+  dashboardId,
+  onAddWidgetClick = () => {},
+  widgets = [],
+  period,
+  view,
+  filter,
+  template
+}) => {
   // --- Template-based customization enforcement ---
   const customization = template?.customization || {};
   const allowedWidgetTypes = customization.allowedWidgetTypes || null;
@@ -193,26 +210,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
   const allowWidgetResize = customization.allowWidgetResize !== false; // default true
   const allowLayoutChange = customization.allowLayoutChange !== false; // default true
 
-  // Enforce allowed widget types
-  const filteredWidgetPositions = allowedWidgetTypes
-    ? Object.fromEntries(Object.entries(widgetPositions).filter(([_, type]) => allowedWidgetTypes.includes(type)))
-    : widgetPositions;
+  const filteredWidgets = useMemo(
+    () => allowedWidgetTypes
+      ? widgets.filter(w => allowedWidgetTypes.includes(w.type))
+      : widgets,
+    [widgets, allowedWidgetTypes]
+  );
 
-  // Warn if any widgets are filtered out
-  React.useEffect(() => {
-    if (allowedWidgetTypes) {
-      const removed = Object.entries(widgetPositions).filter(([_, type]) => !allowedWidgetTypes.includes(type));
-      if (removed.length > 0) {
-        setWidgetPositions(filteredWidgetPositions);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowedWidgetTypes]);
+  // For rendering, use filteredWidgets array
+  const widgetsToRender = filteredWidgets.map(w => {
+    const meta = widgetRegistry.find(meta => meta.id === w.type);
+    return {
+      id: w.id,
+      title: meta?.name || '',
+      component: meta?.render({ id: w.id, dashboard_id: dashboardId }) || <div>No widget found</div>,
+    };
+  });
 
-  // Layout constraints: use template layout if provided
+  // Layout generation now only uses filteredWidgets
   const initialLayouts = React.useMemo(() => {
     if (template?.layout) {
-      // Convert template.layout.items to react-grid-layout format for all breakpoints
       const breakpoints = template.layout.breakpoints;
       const items = template.layout.items;
       const layouts: any = {};
@@ -221,8 +238,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
       }
       return layouts;
     }
-    return generateAllLayouts(filteredWidgetPositions);
-  }, [template, filteredWidgetPositions]);
+    return generateAllLayouts(filteredWidgets);
+  }, [template, filteredWidgets]);
 
   const [layouts, setLayouts] = useState<GridLayouts>(initialLayouts); // Use renamed type
   const [history, setHistory] = useState<GridLayouts[]>([initialLayouts]);
@@ -232,6 +249,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // State for settings panel
   const { toast } = useToast(); // Initialize toast
   const [pendingRemove, setPendingRemove] = useState<string | null>(null);
+  const isOnline = useOnlineStatus();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // --- Placeholder Settings State & Handlers ---
   // TODO: Replace these with actual state management and logic
@@ -270,6 +289,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
     // If isPreview, maybe update temporary state or apply grid settings temporarily
   };
   // --- End Placeholder Settings State & Handlers ---
+
+  // Fetch widgets for this dashboard
+  const [dashboardWidgets, setDashboardWidgets] = useState<Widget[]>([]);
+  useEffect(() => {
+    if (!dashboardId) return;
+    getWidgets(dashboardId).then(setDashboardWidgets).catch(console.error);
+  }, [dashboardId]);
 
   // Load initial layout from DB or Local Storage on mount
   useEffect(() => {
@@ -314,6 +340,49 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
     };
     loadInitialLayout();
   }, []);
+
+  // Reconnection sync logic
+  useEffect(() => {
+    let didCancel = false;
+    if (isOnline) {
+      const queue = getSyncQueue();
+      if (queue.length > 0) {
+        setIsSyncing(true);
+        processSyncQueue(async (item: SyncQueueItem) => {
+          if (item.type === 'update') {
+            try {
+              // Fetch remote updatedAt for conflict resolution
+              const { updatedAt: remoteUpdatedAt } = await getLayoutWithMeta(item.dashboardId);
+              const localUpdatedAt = item.updatedAt || new Date(item.timestamp).toISOString();
+              if (remoteUpdatedAt && new Date(remoteUpdatedAt) > new Date(localUpdatedAt)) {
+                if (!didCancel) toast({ title: 'Sync Skipped', description: 'Remote version is newer, skipping local change.', variant: 'default' });
+                return true; // Remove from queue, do not overwrite remote
+              }
+              // Last write wins: local is newer or equal, proceed to save
+              const success = await saveLayout(item.payload, item.dashboardId);
+              if (success) {
+                if (!didCancel) toast({ title: 'Dashboard Synced', description: 'Offline changes have been synced to the cloud.' });
+                return true;
+              } else {
+                if (!didCancel) toast({ title: 'Sync Failed', description: 'Could not sync dashboard changes.', variant: 'destructive' });
+                return false;
+              }
+            } catch (e) {
+              if (!didCancel) toast({ title: 'Sync Error', description: 'Error syncing dashboard changes.', variant: 'destructive' });
+              return false;
+            }
+          } else {
+            // For now, just log other types
+            console.log('SyncQueue: Skipping unsupported type', item.type);
+            return true;
+          }
+        }).finally(() => {
+          if (!didCancel) setIsSyncing(false);
+        });
+      }
+    }
+    return () => { didCancel = true; };
+  }, [isOnline, toast]);
 
   // Debounced save function (saves the current state)
   const debouncedSaveLayout = useCallback(
@@ -407,29 +476,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
-  // Create the list of widgets to render based on current positions
-  const widgetsToRender = Object.keys(filteredWidgetPositions).map(position => {
-    const widgetType = filteredWidgetPositions[position];
-    const meta = widgetRegistry.find(w => w.id === widgetType);
-    return {
-      id: position,
-      title: meta?.name || '',
-      component: meta?.render({ id: position }) || <div>No widget found</div>,
-    };
-  });
-
   const handleRemoveWidget = (position: string) => {
     setPendingRemove(position);
   };
 
   const confirmRemoveWidget = () => {
     if (pendingRemove) {
-      setWidgetPositions(prev => {
-        const newPositions = { ...prev };
-        delete newPositions[pendingRemove];
-        return newPositions;
-      });
-      // Remove the layout item for this widget from all breakpoints
       setLayouts(prevLayouts => {
         const newLayouts = { ...prevLayouts };
         Object.keys(newLayouts).forEach(breakpoint => {
@@ -446,14 +498,44 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
   // When widgetPositions changes (add/remove), regenerate all layouts
   useEffect(() => {
     if (isLoaded) {
-      const newLayouts = generateAllLayouts(filteredWidgetPositions);
-      setLayouts(normalizeLayouts(newLayouts));
+      const newLayouts = normalizeLayouts(generateAllLayouts(filteredWidgets));
+      if (JSON.stringify(newLayouts) !== JSON.stringify(layouts)) {
+        setLayouts(newLayouts);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [Object.keys(filteredWidgetPositions).join(','), isLoaded]);
+  }, [filteredWidgets, isLoaded]);
 
   // Debug log for layouts
   console.log('Current layouts:', layouts);
+
+  // Example add widget handler (replace/add as needed)
+  const handleAddWidgetToDashboard = async (type: string, config?: Record<string, any>) => {
+    try {
+      const newWidget = await createWidget({
+        user_id: user.id,
+        dashboard_id: dashboardId,
+        type,
+        config,
+        position: dashboardWidgets.length + 1,
+      });
+      setDashboardWidgets(prev => [...prev, newWidget]);
+      toast({ title: 'Widget added', description: `${type} widget added to dashboard.` });
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to add widget', variant: 'destructive' });
+    }
+  };
+
+  // Example remove widget handler
+  const handleRemoveWidgetFromDashboard = async (widgetId: string) => {
+    try {
+      await deleteWidget(widgetId);
+      setDashboardWidgets(prev => prev.filter(w => w.id !== widgetId));
+      toast({ title: 'Widget removed', description: 'Widget removed from dashboard.' });
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to remove widget', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="flex-1 w-full h-full">
@@ -499,20 +581,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddWidgetClick = () => {}, widg
           isDraggable={allowWidgetMove}
           isResizable={allowWidgetResize}
         >
-          {Object.entries(filteredWidgetPositions).map(([key, type]) => {
-            const meta = widgetRegistry.find(w => w.id === type);
-            if (!meta) return null;
-            return (
-              <div key={type} data-grid={layouts.lg.find(l => l.i === type)}>
-                <WidgetContainer
-                  onRemove={() => handleRemoveWidget(type)}
-                  allowRemove={allowWidgetRemove}
-                >
-                  {meta.render({ id: type })}
-                </WidgetContainer>
-              </div>
-            );
-          })}
+          {widgetsToRender.map(({ id, component }) => (
+            <div key={id} data-grid={layouts.lg.find(l => l.i === id)}>
+              <WidgetContainer
+                onRemove={() => handleRemoveWidget(id)}
+                allowRemove={allowWidgetRemove}
+              >
+                {component}
+              </WidgetContainer>
+            </div>
+          ))}
         </ResponsiveGridLayout>
       ) : (
         <div className="flex justify-center items-center min-h-[300px]">

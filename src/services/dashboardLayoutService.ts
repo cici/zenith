@@ -169,4 +169,48 @@ export const saveLayout = async (layoutData: Layouts, layoutName: string = 'defa
   }
 };
 
+/**
+ * Fetches the specified dashboard layout and its updatedAt timestamp for the current user.
+ * @param layoutName - The name of the layout to fetch (defaults to 'default').
+ * @returns { layout: Layouts | null, updatedAt: string | null }
+ */
+export const getLayoutWithMeta = async (layoutName: string = 'default'): Promise<{ layout: Layouts | null, updatedAt: string | null }> => {
+  // Check if we should use local storage
+  if (await shouldUseLocalStorage()) {
+    try {
+      const key = `${LOCAL_STORAGE_KEY}_${getDemoUserId()}_${layoutName}`;
+      const stored = localStorage.getItem(key);
+      if (!stored) return { layout: null, updatedAt: null };
+      const layoutData = JSON.parse(stored);
+      if (isValidLayoutsObject(layoutData)) {
+        return { layout: layoutData, updatedAt: null };
+      } else {
+        return { layout: null, updatedAt: null };
+      }
+    } catch {
+      return { layout: null, updatedAt: null };
+    }
+  }
+  // Supabase implementation
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) return { layout: null, updatedAt: null };
+    const userId = userData.user.id;
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .select('layout_data, updated_at')
+      .eq('user_id', userId)
+      .eq('layout_name', layoutName)
+      .single();
+    if (error) return { layout: null, updatedAt: null };
+    if (data && data.layout_data && isValidLayoutsObject(data.layout_data)) {
+      return { layout: data.layout_data, updatedAt: data.updated_at || null };
+    } else {
+      return { layout: null, updatedAt: null };
+    }
+  } catch {
+    return { layout: null, updatedAt: null };
+  }
+};
+
 // Add functions for createLayout, deleteLayout, listLayouts etc. if needed later. 
